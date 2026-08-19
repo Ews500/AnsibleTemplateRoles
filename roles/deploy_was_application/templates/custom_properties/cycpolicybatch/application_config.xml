@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<monitor>
+		<request><![CDATA[
+			select 
+			    jen.JOB_INSTANCE_ID\,
+			    jen.JOB_EXECUTION_ID\,
+			    jen.STATUS\,
+			    jen.EXIT_CODE\,
+			    jps.STRING_VAL APPLICATION\, 
+			    jps1.STRING_VAL REFERENCE\,
+			    jps2.STRING_VAL TYPE
+			
+			from 
+			    TBJB_JOB_EXECUTION jen\,
+			    TBJB_JOB_PARAMS jps\,
+			    TBJB_JOB_PARAMS jps1\,
+			    TBJB_JOB_PARAMS jps2
+			
+			where
+			        jps.JOB_INSTANCE_ID = jen.JOB_INSTANCE_ID 
+			    and jps.JOB_INSTANCE_ID = jps1.JOB_INSTANCE_ID 
+			    and jps.JOB_INSTANCE_ID = jps2.JOB_INSTANCE_ID
+			
+			    and jps.KEY_NAME NOT LIKE jps1.KEY_NAME
+			    and jps1.KEY_NAME NOT LIKE jps2.KEY_NAME
+			    and jps.KEY_NAME NOT LIKE jps2.KEY_NAME
+			    and jps.KEY_NAME = 'Application'
+			    and jps1.KEY_NAME = 'RefBatch'
+			    and jps2.KEY_NAME = 'Type' 
+			    
+			    and jen.JOB_EXECUTION_ID = 
+			    (
+			          select
+			                max(jen2.JOB_EXECUTION_ID) 
+			          from 
+			                TBJB_JOB_EXECUTION jen2
+			          where 
+			                jen2.JOB_INSTANCE_ID = jen.JOB_INSTANCE_ID 
+			     )  
+			order by 
+			    jen.JOB_INSTANCE_ID DESC 
+		]]>
+		</request>
+	</monitor>
+	<security>
+		<autorized-remote-hosts>
+	        {% for host in env_vars.auth_hosts %}
+			<host>{{ host }}</host>
+		    {% endfor %}
+		</autorized-remote-hosts>
+	</security>
+</configuration>

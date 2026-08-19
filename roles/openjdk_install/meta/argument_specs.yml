@@ -1,0 +1,26 @@
+# roles/openjdk_install/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/openjdk_install/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the openjdk_install role
+    description:
+      - This is the main entrypoint for the C(openjdk_install) role.
+      - Installs OpenJDK Java Development Kit from /nfstemp/jdk
+      - Configures symbolic link.
+    version_added: 1.0.0
+    author:
+      - Daniel Pitt (@DJPITT92)
+    options:
+      java_version:
+        type: "str"
+        required: true
+        description:
+          - "OpenJDK version to install"
+          - "Defaults to 11.0.24.0.8-2"
+      java_home:
+        type: "str"
+        required: true
+        description:
+          - "Custom JAVA_HOME path"
+          - "Defaults to /app/openjdk"

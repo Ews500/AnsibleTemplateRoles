@@ -1,0 +1,65 @@
+import sys
+
+def get_wsadmin_args():
+    # wsadmin may provide argv; if not, fall back to sys.argv
+    try:
+        return list(argv)  # noqa: F821 (argv may not exist)
+    except:
+        return sys.argv[1:]  # sys.argv[0] is the script name
+
+def pick_node_name(args):
+    # args might include wsadmin options like: -con soap <Node>
+    cleaned = []
+    for a in args:
+        s = str(a).strip()
+        if not s:
+            continue
+        # skip wsadmin flags and their common values
+        if s.startswith('-'):
+            continue
+        if s.lower() in ('soap', 'rmi', 'ipc'):
+            continue
+        cleaned.append(s)
+
+    if not cleaned:
+        print("ERROR: NodeName argument missing.")
+        print("Usage: wsadmin.sh -con soap -lang jython -f /tmp/list_clusters_on_node.py <NodeName>")
+        sys.exit(1)
+
+    return cleaned[-1]
+
+args = get_wsadmin_args()
+target_node = pick_node_name(args)
+
+clusters_raw = AdminConfig.list('ServerCluster')
+if not clusters_raw:
+    print("INFO: No clusters found in this cell.")
+    sys.exit(0)
+
+clusters = [c for c in str(clusters_raw).splitlines() if c.strip()]
+found = {}  # clusterName -> [memberServerName]
+
+for c in clusters:
+    cluster_name = AdminConfig.showAttribute(c, 'name')
+
+    members_raw = AdminConfig.list('ClusterMember', c)
+    if not members_raw:
+        continue
+
+    members = [m for m in str(members_raw).splitlines() if m.strip()]
+
+    for m in members:
+        node_name = AdminConfig.showAttribute(m, 'nodeName')
+        member_name = AdminConfig.showAttribute(m, 'memberName')  # server name
+
+        if node_name == target_node:
+            found.setdefault(cluster_name, []).append(member_name)
+
+if not found:
+    print("INFO: No cluster members found on node: %s" % target_node)
+else:
+    print("Clusters with members on node: %s" % target_node)
+    for cn in sorted(found.keys()):
+        print(" - %s" % cn)
+        for mem in sorted(found[cn]):
+            print("    * %s" % mem)

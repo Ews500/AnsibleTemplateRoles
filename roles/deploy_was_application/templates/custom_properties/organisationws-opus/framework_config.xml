@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<!-- This is the database against which the framework authenticates against. 
+		If no value is specified, then default datasource is used. The default 
+		datasource is specified in db_config.xml-->
+	<authentication-datasource>{{ env_vars.authentication_datasource }}</authentication-datasource>
+    <authorisation>
+            <datasource>{{ env_vars.jdbc_datasource_list | json_query('[?db_name==`%s`].db_name' | format(vault[app].sym_db_name)) | join(" ") }}</datasource>
+            <privilege></privilege>
+            <form>ORG SERVICE</form>
+            <item>ORG SERVICE</item>
+            <!-- <form>B2BAUTH</form> -->
+
+            <!-- <item>B2BAUTH</item> -->
+            <itemID>-1</itemID>
+      </authorisation>
+	<error-message-cache>
+	    <error-message-loader>
+			<loader-class>com.atradius.util.exception.messages.XMLErrorMessageLoader</loader-class>
+			<load-on-startup>yes</load-on-startup>
+		</error-message-loader>
+	</error-message-cache>
+	<error-management>
+		<show-internal-error>yes</show-internal-error>
+		<hide-stacktrace>no</hide-stacktrace>
+	</error-management>
+        <logging>
+		<show-request-message>no</show-request-message>
+		<show-response-message>no</show-response-message>
+	</logging>
+</configuration>

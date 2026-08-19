@@ -1,0 +1,28 @@
+- name: Modify JPA Spec level # noqa yaml[line-length]
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -lang jython -c "
+    AdminTask.modifyJPASpecLevel(AdminConfig.getid('/Cell:{{ env_vars.cell_name }}/Node:{{ node_name }}/Server:{{ env_vars.server_name }}/'),
+    '[ -specLevel {{ app_vars.jpa_config.jpa_spec }}]') "
+  register: jpa_speclevel
+  changed_when: jpa_speclevel.rc == 0
+  failed_when: jpa_speclevel.rc != 0
+
+- name: Save the WebSphere configuration
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c 'AdminConfig.save()'"
+  changed_when: true
+
+- name: Create Java Persistence API Service # noqa yaml[line-length]
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -lang jython -c "
+    AdminConfig.create('JavaPersistenceAPIService',
+    AdminConfig.list('ApplicationServer', AdminConfig.getid('/Cell:{{ env_vars.cell_name }}/Node:{{ node_name }}/Server:{{ env_vars.server_name }}/')),
+    '[[defaultPersistenceProvider {{ app_vars.jpa_config.persistence_provider }}]]')"
+  register: jpa_creation
+  changed_when: jpa_creation.rc == 0
+  failed_when: jpa_creation.rc != 0
+
+- name: Save the WebSphere configuration
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c 'AdminConfig.save()'"
+  changed_when: true

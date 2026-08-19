@@ -1,0 +1,10 @@
+- name: Is Product already Installed?
+  ansible.builtin.command:
+    cmd: egrep "{{ iim_version }}" {{ iim_data_location }}/installed.xml
+  register: version_already_installed
+  changed_when: version_already_installed.rc != 0
+  failed_when: false
+
+- name: Install IBM Installation Manager
+  ansible.builtin.include_tasks: install_iim.yml
+  when: version_already_installed.rc != 0

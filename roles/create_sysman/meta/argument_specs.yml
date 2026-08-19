@@ -1,0 +1,27 @@
+# roles/create_sysman/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/create_sysman/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the create_sysman role
+    description:
+      - This is the main entrypoint for the C(create_sysman) role.
+      - Creates system management directories for WebSphere operations.
+      - Templates operational scripts for starting and stopping application servers.
+      - Sets up proper directory structure for system administration tasks.
+    version_added: 1.0.0
+    author:
+      - Josh Groves-Waller (@GBJGRO3)
+    options:
+      sysman_dir:
+        type: "str"
+        required: false
+        default: "/sysman/operators"
+        description:
+          - "Directory for system management scripts"
+      log_dir:
+        type: "str"
+        required: false
+        default: "/var/log/websphere"
+        description:
+          - "Directory for WebSphere logs"

@@ -1,0 +1,4 @@
+---
+
+sysman_dir: '/sysman/operators'
+log_dir: '/var/log/websphere'

@@ -1,0 +1,53 @@
+- name: Set agedTimeout on datasource connection pool
+  ansible.builtin.shell: >
+    {{ profile_dir }}/bin/wsadmin.sh -lang jython -c "
+    ds = AdminConfig.getid('/Server:{{ env_vars.server_name }}/JDBCProvider:{{ jdbc_datasource.provider_name }}/DataSource:{{ jdbc_datasource.db_name }}/');
+    pool = AdminConfig.list('ConnectionPool', ds);
+    AdminConfig.modify(pool, [['agedTimeout', {{ jdbc_datasource.aged_timeout }}]]);
+    AdminConfig.save()
+    "
+  register: datasource_aged_timeout
+  when: jdbc_datasource.aged_timeout is defined
+  changed_when: datasource_aged_timeout.rc == 0
+  failed_when: datasource_aged_timeout.rc != 0
+
+- name: Debug agedTimeout task output
+  ansible.builtin.debug:
+    msg: "Return Code: {{ datasource_aged_timeout.rc }}, Output: {{ datasource_aged_timeout.stdout }}"
+  when: datasource_aged_timeout is defined
+
+- name: Create jython script for datasource validation properties
+  ansible.builtin.template:
+    src: "{{ datasource_validation_script.src }}"
+    dest: "{{ datasource_validation_script.dest }}"
+    mode: '0644'
+  when:
+    - jdbc_datasource.validate_new_connection is defined
+    - jdbc_datasource.retry_count is defined
+    - jdbc_datasource.retry_interval is defined
+    - jdbc_datasource.jdbc_validation_timeout is defined
+    - jdbc_datasource.pre_test_sql_string is defined
+
+- name: Configure datasource validation properties
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -lang jython -f /tmp/datasource_validation_config.jython"
+  register: validation_update
+  when:
+    - jdbc_datasource.validate_new_connection is defined
+    - jdbc_datasource.retry_count is defined
+    - jdbc_datasource.retry_interval is defined
+    - jdbc_datasource.jdbc_validation_timeout is defined
+    - jdbc_datasource.pre_test_sql_string is defined
+  changed_when: validation_update.rc == 0
+  failed_when: validation_update.rc != 0
+
+- name: Debug validation properties task output
+  ansible.builtin.debug:
+    msg: "Return Code: {{ validation_update.rc }}, Output: {{ validation_update.stdout }}"
+  when: validation_update is defined
+
+- name: Clean up datasource validation jython script
+  ansible.builtin.file:
+    path: "{{ datasource_validation_script.dest }}"
+    state: absent
+  when: validation_update.rc == 0

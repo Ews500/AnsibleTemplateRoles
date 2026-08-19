@@ -1,0 +1,3 @@
+{% for monitor_variables in monitor_vars[ansible_host].check_urls %}
+{{ monitor_variables }}
+{% endfor %}

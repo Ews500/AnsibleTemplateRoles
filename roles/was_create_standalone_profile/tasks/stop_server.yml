@@ -1,0 +1,10 @@
+- name: Stop WebSphere server
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/stopServer.sh {{ env_vars.server_name }} -username {{ vault.admin_username }} -password {{ vault.admin_password }}"
+  register: serverstatus_output
+  failed_when: "'Server server1 is already stopped' not in serverstatus_output.stdout and serverstatus_output.rc != 0"
+  changed_when: "'Server server1 stopped' in serverstatus_output.stdout"
+
+- name: Show updated Server Status
+  ansible.builtin.debug:
+    msg: "Server start output: {{ serverstatus_output.stdout }}"

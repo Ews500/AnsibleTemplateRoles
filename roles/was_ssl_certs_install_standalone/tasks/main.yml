@@ -1,0 +1,19 @@
+- name: Install SSL Certificate for Standalone app JVM
+  tags: ssl_install
+  block:
+    - name: Retrieve server node name
+      ansible.builtin.command: >
+        {{ profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP -c "
+        serverID = AdminControl.completeObjectName('WebSphere:type=Server,name={{ env_vars.server_name }},*');
+        print AdminControl.getAttribute(serverID, 'nodeName')"
+      register: node_name_output
+      changed_when: false
+      failed_when: node_name_output.rc != 0
+
+    - name: Set fact for extracted node name
+      ansible.builtin.set_fact:
+        node_name: "{{ node_name_output.stdout_lines[-1] }}"
+
+    - name: Install Atradius SSL Certificate
+      tags: install_ssl
+      ansible.builtin.include_tasks: install_ssl.yml

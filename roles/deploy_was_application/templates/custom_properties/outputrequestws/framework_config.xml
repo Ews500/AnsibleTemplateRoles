@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<!-- This is the database against which the framework authenticates against. 
+		If no value is specified, then default datasource is used. The default 
+		datasource is specified in db_config.xml-->
+	<authentication-datasource>{{ env_vars.auth_datasource }}</authentication-datasource>
+	<error-message-cache>
+	    <error-message-loader>
+			<loader-class>com.atradius.util.exception.messages.XMLErrorMessageLoader</loader-class>
+			<load-on-startup>yes</load-on-startup>
+		</error-message-loader>
+	</error-message-cache>
+        <logging>
+                <show-request-message>no</show-request-message>
+                <show-response-message>no</show-response-message>
+        </logging>
+	<error-management>
+		<show-internal-error>no</show-internal-error>
+		<hide-stacktrace>no</hide-stacktrace>
+	</error-management>
+</configuration>

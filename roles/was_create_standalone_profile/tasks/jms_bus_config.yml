@@ -1,0 +1,75 @@
+- name: Create JMS Bus
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c "
+    AdminTask.createSIBus('[-bus {{ env_vars.sibus.name }} -busSecurity {{ env_vars.sibus.bus_security }} -scriptCompatibility 6.1 ]')"
+  register: bus_creation
+  changed_when: bus_creation.rc == 0
+  failed_when: bus_creation.rc != 0 and 'CWSJA0000E' not in bus_creation.stdout
+
+- name: Add Bus Member
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -lang jython -conntype NONE -c "
+    AdminTask.addSIBusMember('[-bus {{ env_vars.sibus.name }} -node {{ node_name }} -server {{ env_vars.server_name }} -fileStore
+    -logSize {{ env_vars.sibus_member.log_size }} -minPermanentStoreSize {{ env_vars.sibus_member.min_perm_store_size }}
+    -maxPermanentStoreSize {{ env_vars.sibus_member.max_perm_store_size }} -unlimitedPermanentStoreSize false
+    -minTemporaryStoreSize {{ env_vars.sibus_member.min_temp_store_size }} -maxTemporaryStoreSize {{ env_vars.sibus_member.max_temp_store_size }}
+    -unlimitedTemporaryStoreSize false ]')"
+  register: bus_member_creation
+  changed_when: bus_member_creation.rc == 0
+  failed_when: bus_member_creation.rc != 0 and 'CWSJA0160E' not in bus_member_creation.stdout
+
+- name: Create Bus Destination
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -lang jython -conntype NONE -c "
+    AdminTask.createSIBDestination('[-bus {{ env_vars.sibus.name }} -name {{ env_vars.sibus_destination.name }} -type {{ env_vars.sibus_destination.type }}
+    -reliability ASSURED_PERSISTENT -description ]')"
+  register: bus_dest_creation
+  changed_when: bus_dest_creation.rc == 0
+  failed_when: bus_dest_creation.rc != 0 and 'CWMSR0074E' not in bus_dest_creation.stdout
+
+- name: Create JMS Connection Factory
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -lang jython -conntype NONE -c "AdminTask.createSIBJMSConnectionFactory(
+    '{{ env_vars.server_name }}(cells/{{ env_vars.cell_name }}/nodes/{{ node_name }}/servers/{{ env_vars.server_name }}|server.xml)',
+    '[-name {{ env_vars.jms_conn_factory.name }} -jndiName {{ env_vars.jms_conn_factory.jndi_name }} -description -category -busName {{ env_vars.sibus.name }}
+    -clientID -nonPersistentMapping ExpressNonPersistent -readAhead Default -tempQueueNamePrefix -tempTopicNamePrefix
+    -durableSubscriptionHome {{ node_name }}.{{ env_vars.server_name }}-{{ env_vars.sibus.name }} -shareDurableSubscriptions InCluster
+    -target -targetType BusMember -targetSignificance Preferred -targetTransportChain -providerEndPoints
+    -connectionProximity Bus -containerAuthAlias -mappingAlias -authDataAlias -shareDataSourceWithCMP false
+    -logMissingTransactionContext false -manageCachedHandles false -xaRecoveryAuthAlias -persistentMapping ReliablePersistent
+    -consumerDoesNotModifyPayloadAfterGet false -producerDoesNotModifyPayloadAfterSet false]')"
+  register: conn_factory_creation
+  changed_when: conn_factory_creation.rc == 0
+  failed_when: conn_factory_creation.rc != 0 and 'CWMSR0074E' not in conn_factory_creation.stdout
+
+- name: Create JMS Topic
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -lang jython -conntype NONE -c "AdminTask.createSIBJMSTopic(
+    '{{ env_vars.server_name }}(cells/{{ env_vars.cell_name }}/nodes/{{ node_name }}/servers/{{ env_vars.server_name }}|server.xml)',
+    '[-name {{ env_vars.jms_topic.name }} -jndiName {{ env_vars.jms_topic.jndi_name }} -description -topicName {{ env_vars.jms_topic.name }}
+    -deliveryMode Application -readAhead AsConnection -busName {{ env_vars.sibus.name }} -topicSpace {{ env_vars.sibus_destination.name }}]')"
+  register: jms_topic_creation
+  changed_when: jms_topic_creation.rc == 0
+  failed_when: jms_topic_creation.rc != 0 and 'CWMSR0074E' not in jms_topic_creation.stdout
+
+- name: Create JMS Topic Activation Specifications
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -lang jython -conntype NONE -c "AdminTask.createSIBJMSActivationSpec(
+    '{{ env_vars.server_name }}(cells/{{ env_vars.cell_name }}/nodes/{{ node_name }}/servers/{{ env_vars.server_name }}|server.xml)',
+    '[-name {{ env_vars.jms_topic_act_spec.name }} -jndiName {{ env_vars.jms_topic_act_spec.jndi_name }}
+    -destinationJndiName {{ env_vars.jms_topic.jndi_name }} -connectionFactoryLookup
+    -busName {{ env_vars.sibus.name }} -clientId -durableSubscriptionHome {{ node_name }}.{{ env_vars.server_name }}-{{ env_vars.sibus.name }}
+    -destinationType javax.jms.Topic -messageSelector -acknowledgeMode Auto-acknowledge -subscriptionName -maxBatchSize 1
+    -maxConcurrency 10 -subscriptionDurability NonDurable -shareDurableSubscriptions InCluster -authenticationAlias -readAhead Default
+    -target -targetType BusMember -targetSignificance Preferred -targetTransportChain -providerEndPoints -shareDataSourceWithCMP false
+    -consumerDoesNotModifyPayloadAfterGet false -forwarderDoesNotModifyPayloadAfterSet false -alwaysActivateAllMDBs false -retryInterval 30
+    -autoStopSequentialMessageFailure 0 -failingMessageDelay 0]')"
+  register: jms_topic_as_creation
+  changed_when: jms_topic_as_creation.rc == 0
+  failed_when: jms_topic_as_creation.rc != 0 and 'CWMSR0074E' not in jms_topic_as_creation.stdout
+
+- name: Save the WebSphere configuration
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c 'AdminConfig.save()'"
+  when: bus_creation is defined
+  changed_when: true

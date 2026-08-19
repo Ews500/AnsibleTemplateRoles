@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<agent-input>
+  <variables>
+    <variable name='sharedLocation' value='{{ imshared_location }}'/>
+  </variables>
+  <server>
+    <repository location='{{ install_dir.path }}/was'/>
+    <repository location='{{ install_dir.path }}/sdk'/>
+  </server>
+  <profile id='{{ was_vars.profile_id }}' installLocation='{{ target_group_vars.was_path }}'>
+    <data key='cic.selector.arch' value='x86_64'/>
+  </profile>
+  <install>
+    <!-- #######################################################################
+    # WebSphere Application Server
+    ####################################################################### -->
+    <offering profile='{{ was_vars.profile_id }}' id='{{ target_group_vars.was_offering_id }}' version='{{ was_version }}' features='{{ was_vars.features }}' {% if was_already_installed.rc != 0 %}installFixes='none'{% endif %}/>
+    <!-- #######################################################################
+    # Java SDK
+    ####################################################################### -->
+    <offering profile='{{ was_vars.profile_id }}' id='{{ java_vars.offering_id }}' version='{{ java_version }}' features='{{ java_vars.features }}'/>
+  </install>
+  <preference name='com.ibm.cic.common.core.preferences.eclipseCache' value='{{ imshared_location }}'/>
+</agent-input>

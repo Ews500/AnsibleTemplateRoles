@@ -1,0 +1,30 @@
+- name: Get JDBC Provider ID via SOAP
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c "
+      print AdminConfig.getid('/Server:{{ env_vars.server_name }}/JDBCProvider:Oracle JDBC Driver/')"
+  register: jdbc_provider_id
+  changed_when: false
+  failed_when: jdbc_provider_id.rc != 0
+
+- name: Sanitize wsadmin output and extract JDBC Provider ID
+  ansible.builtin.set_fact:
+    jdbc_provider_id_clean: >-
+      {{ (jdbc_provider_id.stdout_lines
+          | reject('search','^WASX') | list | last | default(''))
+          | trim }}
+
+- name: Create Oracle JDBC provider
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c "
+    AdminTask.createJDBCProvider('[-scope Server={{ env_vars.server_name }} -databaseType {{ jdbc_provider.db_type }}
+    -providerType \"{{ jdbc_provider.provider_type }}\" -implementationType \"{{ jdbc_provider.impl_type }}\"
+    -name \"{{ jdbc_provider.name }}\" -implementationClassName \"{{ jdbc_provider.impl_class_name }}\"
+    -classpath \"{{ jdbc_provider.classpath }}\" -nativePath \"{{ jdbc_provider.native_path }}\"]')"
+  when: jdbc_provider_id_clean == ""
+  register: jdbc_provider_create
+  changed_when: jdbc_provider_create.rc == 0
+
+- name: Save WebSphere configuration (only if created)
+  ansible.builtin.command: "{{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c 'AdminConfig.save()'"
+  when: jdbc_provider_id.stdout | trim == ""
+  changed_when: true

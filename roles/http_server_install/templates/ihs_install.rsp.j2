@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<agent-input>
+  <variables>
+    <variable name='sharedLocation' value='{{ imshared_location }}'/>
+  </variables>
+  <server>
+ 	 <repository location='{{ install_dir.path }}/ihs'/>
+	 <repository location='{{ install_dir.path }}/ihsplg'/>
+	 <repository location='{{ install_dir.path }}/sdk'/>
+	 <repository location='{{ install_dir.path }}/ihswct'/>
+  </server>
+  <!-- #######################################################################
+  # IBM HTTP Server
+  ####################################################################### -->
+  <profile id='{{ ihs_vars.profile_id }}' installLocation='{{ ihs_vars.ihs_path }}'>
+    <data key='cic.selector.arch' value='x86_64'/>
+    <data key='user.ihs.allowNonRootSilentInstall' value='true'/>
+    <data key='user.ihs.httpPort' value='80'/>
+  </profile>
+  <install>
+    <offering profile='{{ ihs_vars.profile_id }}' id='{{ ihs_vars.ihs_offering_id }}' version='{{ ihs_version }}' features='{{ ihsplg_vars.features }}'/>
+    <offering profile='{{ ihs_vars.profile_id }}' id='{{ java_vars.offering_id }}' version='{{ java_version }}' features='{{ java_vars.features }}'/>
+  </install>
+  <!-- #######################################################################
+  # Web Server Plug-ins for IBM WebSphere Application Server
+  ####################################################################### -->
+  <profile id='{{ ihs_plg_vars.profile_id }}' installLocation='{{ ihs_plg_vars.ihs_plg_path }}'>
+    <data key='cic.selector.arch' value='x86_64'/>
+  </profile>
+  <install>
+    <offering profile='{{ ihs_plg_vars.profile_id }}' id='{{ ihs_plg_vars.offering_id }}' version='{{ ihs_plg_version }}' features='{{ ihsplg_vars.features }}'/>
+    <offering profile='{{ ihs_plg_vars.profile_id }}' id='{{ java_vars.offering_id }}' version='{{ java_version }}' features='{{ java_vars.features }}'/>
+  </install>
+  <!-- #######################################################################
+  # WebSphere Customization Toolbox
+  ####################################################################### -->
+  <profile id='{{ ihs_wct_vars.profile_id }}' installLocation='{{ ihs_wct_vars.ihs_wct_path }}'>
+    <data key='cic.selector.arch' value='x86_64'/>
+  </profile>
+  <install>
+    <offering profile='{{ ihs_wct_vars.profile_id }}' id='{{ ihs_wct_vars.offering_id }}' version='{{ ihs_wct_version }}' features='{{ ihswct_vars.features }}'/>
+    <offering profile='{{ ihs_wct_vars.profile_id }}' id='{{ java_vars.offering_id }}' version='{{ java_version }}' features='{{ java_vars.features }}'/>
+  </install>
+  <preference name='com.ibm.cic.common.core.preferences.eclipseCache' value='{{ imshared_location }}'/>
+</agent-input>

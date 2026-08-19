@@ -1,0 +1,143 @@
+#!/bin/ksh
+#export PATH="/usr/bin:/etc:/usr/sbin:/usr/ucb:/sbin:/usr/local/bin"
+if [ $# -gt 0 ]; then echo "No arguments expected or required!!!"; exit 16; fi
+
+#---------------------------------------------------------------------
+#
+# Function - Script to start all of a nodes applications.
+#
+#            No parameters are expected/required
+#
+#---------------------------------------------------------------------
+#
+# Change Activity Log:
+#
+# DD-MMM-YY  Description
+# ---------  ---------------------------------------------------------
+#
+# 21-Jan-15  Original by ..................... Martyn Jones
+# 19-Sep-16  Added PRODSSOSERVATNET - CRN120144 ....... Martyn Jones
+# 17-Oct-16  Added PRODLEADMAN - CRN120669 ............ Chris Lawrence
+# 05-Jul-18  Added PRODMOBILITY - IN882426 ............ Martyn Jones
+#---------------------------------------------------------------------
+
+
+#---------------------------------------------------------------------
+# Perform initialisation
+#---------------------------------------------------------------------
+MyCmd=$(whence   $0)
+MyDir=$(dirname  ${MyCmd})
+MyCmd=$(basename $0)
+MyArgs="$*"
+PATH=${PATH}:${MyDir}
+export PATH
+MyRc=0
+export STARTUP_WEBSPHERE_LOG=${SYSMAN_ALOG:=/var/log/websphere/start.websphere.$(hostname).$(date "+%Y_%m_%d_%H_%M_%S").log}
+
+#MyLog=$(date +"/sysman/logs/${MyCmd}.%Y.%m.%d.%H.%M.%S.log")
+
+
+#---------------------------------------------------------------------
+# Display start-up message in the system log
+#---------------------------------------------------------------------
+echo "Running ${MyDir}/${MyCmd} ${MyArgs}" >> ${STARTUP_WEBSPHERE_LOG}
+
+
+#---------------------------------------------------------------------
+# On exit display termination message into system log.
+#---------------------------------------------------------------------
+trap "terminate;" 0
+function terminate
+{
+  echo "Completed ${MyDir}/${MyCmd}, RC=${MyRc}" >> ${STARTUP_WEBSPHERE_LOG}
+  echo "\nCompleted ${MyDir}/${MyCmd}, RC=${MyRc}\n\n"
+}
+
+trap "murder;" 1 2 3 15
+function murder
+{
+  MyRc=255
+  echo "${MyDir}/${MyCmd} is being murdered!!!" 1>&2
+  exit ${MyRc}
+}
+
+
+#---------------------------------------------------------------------
+# Ensure NO parameters other than those expected have been passed
+#---------------------------------------------------------------------
+if [ $# -ne 0 ]; then
+  echo "Invalid number of parameters supplied ($#), none expected!!!"
+  MyRc=16
+  exit ${MyRc}
+fi
+
+
+#---------------------------------------------------------------------
+# Redirect STDOUT and STDERR...
+#---------------------------------------------------------------------
+#echo "Output will be written to ${MyLog}..."
+#exec >${MyLog} 2>&1
+
+
+#---------------------------------------------------------------------
+# Display header page...
+#---------------------------------------------------------------------
+echo "
+################################################################
+#
+#  DATE:    $(date +"%c")
+#
+#  USER:    $LOGIN ( $LOGNAME )
+#
+#  WHO:     $(who am i 2>/dev/null)
+#
+#  NODE:    $(uname -n) ( $(hostname) )
+#
+#  COMMAND: $(whence $0) $*
+#
+################################################################
+" >> ${STARTUP_WEBSPHERE_LOG}
+
+
+#---------------------------------------------------------------------
+# Start the application(s)
+#---------------------------------------------------------------------
+
+### Started first to prevent the well-known /dev/null problem impacting other applications.
+
+{% for envs_in in envs_on_host[ansible_host[:7]] %}
+/sysman/operators/start_websphere_all_{{ envs_in }}_applications
+(( MyRc = MyRc + $? ))
+
+{% endfor %}
+
+
+#---------------------------------------------------------------------
+# Generate summary of commands...
+#---------------------------------------------------------------------
+#SUMMARY="$(grep -i '[, ]rc=' ${MyLog})"
+#echo  "################################################################"
+#echo  "# $(date +"%T") Summary of commands..."
+#echo  "################################################################"
+#echo "${SUMMARY}"
+
+
+#---------------------------------------------------------------------
+# Mail results to interested parties...
+#---------------------------------------------------------------------
+#SUBJECT="[AIXStartup] $(hostname), RC=${MyRc} - $(date +"%A, %b %e, %Y")"
+#if [ ${MyRc} -ne 0 ]; then
+#  SUBJECT="${SUBJECT}!!!"
+#fi
+
+#mail -s "${SUBJECT}" -c "dba ops" csi < ${MyLog}
+
+echo ${MyRc} >> ${STARTUP_WEBSPHERE_LOG}
+
+cat ${STARTUP_WEBSPHERE_LOG}
+
+exit ${MyRc}
+
+
+
+

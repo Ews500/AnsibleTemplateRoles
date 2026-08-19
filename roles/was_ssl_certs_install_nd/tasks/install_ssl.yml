@@ -1,0 +1,139 @@
+- name: Backup Node profile Configs
+  no_log: true
+  ansible.builtin.command: >
+    {{ target_group_vars.profile_dir }}/bin/backupConfig.sh
+    {{ target_group_vars.profile_dir }}/{{ node_profile }}_config_{{ ansible_date_time.date }}.zip
+    -nostop -quiet
+  register: np_config_backup
+  changed_when: false
+  failed_when: np_config_backup.rc != 0
+
+- name: Install Node SSL on Deployment Manger
+  tags: install_node_ssl
+  delegate_to: "{{ target_group_vars.dmgr_host | default(omit) }}"
+  block:
+    - name: Check if certificate directory exists
+      ansible.builtin.stat:
+        path: "{{ target_group_vars.cert_path }}"
+      register: cert_dir
+
+    - name: Create directory if it does not exist
+      ansible.builtin.file:
+        path: "{{ target_group_vars.cert_path }}"
+        state: directory
+        mode: '0755'
+      when: not cert_dir.stat.exists
+
+    - name: Copy PFX into remote staging directory as Keystore Certificate file
+      ansible.builtin.copy:
+        src: "{{ certs_src_dir }}/{{ pfx_file }}"     # from role files/
+        dest: "{{ target_group_vars.cert_path }}/{{ key_file }}"  # on remote
+        mode: '0644'
+
+    - name: Copy PEM cert into remote staging directory (if needed later)
+      ansible.builtin.copy:
+        src: "{{ certs_src_dir }}/{{ cer_file }}"
+        dest: "{{ target_group_vars.cert_path }}/{{ cer_file }}"
+        mode: '0644'
+
+    - name: Set fact for extracted node name
+      ansible.builtin.set_fact:
+        node_name: "{{ ansible_hostname }}Node01"
+
+    - name: Backup Dmgr profile Configs
+      no_log: true
+      ansible.builtin.command: >
+          {{ target_group_vars.dmgr_profile_dir }}/bin/backupConfig.sh
+          {{ target_group_vars.dmgr_profile_dir }}/{{ dmgr_profile }}_config_{{ ansible_date_time.date }}.zip
+          -nostop -quiet
+      register: dm_config_backup
+      changed_when: false
+      failed_when: dm_config_backup.rc != 0
+
+    - name: Install SSL Certificate to Node App JVM profile
+      no_log: true
+      ansible.builtin.command: >
+          {{ target_group_vars.java_dir }}/jre/bin/ikeycmd -cert -import -file  {{ target_group_vars.cert_path }}/{{ key_file }}
+          -type PKCS12
+          -target {{ target_group_vars.dmgr_profile_dir }}/config/cells/{{ target_group_vars.dmgr_cell }}/nodes/{{ node_name }}/{{ key_file }}
+          -target_pw {{ vault.default_ssl_pwd }} -target_type PKCS12 -pw {{ vault.ssl_cert_password }}
+      register: sslcert_install
+      changed_when: sslcert_install.rc == 0
+
+    - name: Perform Node Sync
+      ansible.builtin.command:
+        cmd: "{{ target_group_vars.wsadmin_path }}/wsadmin.sh -conntype SOAP -lang jython -c 'AdminNodeManagement.syncActiveNodes()'"
+      register: sync_node_output
+      changed_when: true
+
+    - name: Assign installed SSL Certificate to webSphere Application Server JVM
+      ansible.builtin.command: >
+        {{ target_group_vars.wsadmin_path }}/wsadmin.sh -conntype NONE -lang jython -c "
+        AdminTask.replaceCertificate('[-certificateAlias default -replacementCertificateAlias {{ ssl_vars.newcertalias }}
+        -deleteOldCert false -deleteOldSigners false -keyStoreName {{ ssl_vars.nodekeystore }}
+        -keyStoreScope (cell):{{ target_group_vars.dmgr_cell }}:(node):{{ node_name }} ]')"
+      register: assign_sslcert
+      changed_when: assign_sslcert.rc == 0
+
+    - name: Save SSL Enabled WebSphere configuration
+      ansible.builtin.command:
+        cmd: "{{ target_group_vars.wsadmin_path }}/wsadmin.sh -conntype SOAP -lang jython -c 'AdminConfig.save()'"
+      changed_when: true
+
+    - name: Enable newly imported SSL as Default SSL for Node
+      ansible.builtin.command: >
+        {{ target_group_vars.wsadmin_path }}/wsadmin.sh -conntype SOAP -lang jython -c "
+        AdminTask.modifySSLConfig('[-alias NodeDefaultSSLSettings -scopeName (cell):{{ target_group_vars.dmgr_cell }}:(node):{{ node_name }}
+        -keyStoreName {{ ssl_vars.nodekeystore }} -keyStoreScopeName (cell):{{ target_group_vars.dmgr_cell }}:(node):{{ node_name }}
+        -trustStoreName {{ ssl_vars.celltruststore }} -trustStoreScopeName (cell):{{ target_group_vars.dmgr_cell }}
+        -serverKeyAlias {{ ansible_fqdn }} -clientKeyAlias {{ ansible_fqdn }} ]')"
+      register: enable_sslcert
+      changed_when: enable_sslcert.rc == 0
+
+    - name: Save SSDefault SSL for Node
+      ansible.builtin.command:
+        cmd: "{{ target_group_vars.wsadmin_path }}/wsadmin.sh -conntype SOAP -lang jython -c 'AdminConfig.save()'"
+      changed_when: true
+
+    - name: Import the server signer certificate into the Dmgr Node truststore
+      ansible.builtin.command: >
+        {{ target_group_vars.java_dir }}/jre/bin/ikeycmd -cert -add -db {{ target_group_vars.dmgr_profile_dir }}/etc/{{ client_trust_file }}
+        -pw {{ vault.default_ssl_pwd }} -label {{ ssl_vars.newcertalias }} -file {{ target_group_vars.cert_path }}/{{ cer_file }} -type PKCS12
+      register: dmgr_trust_sslcert_import
+      changed_when: dmgr_trust_sslcert_import.rc == 0
+
+    - name: Import the server signer certificate into the Node truststore
+      ansible.builtin.command: >
+        {{ target_group_vars.java_dir }}/jre/bin/ikeycmd -cert -add
+        -db {{ target_group_vars.dmgr_profile_dir }}/config/cells/{{ target_group_vars.dmgr_cell }}/nodes/{{ node_name }}/{{ client_trust_file }}
+        -pw {{ vault.default_ssl_pwd }} -label {{ ssl_vars.newcertalias }} -file {{ target_group_vars.cert_path }}/{{ cer_file }} -type PKCS12
+      register: client_trust_sslcert_import
+      changed_when: client_trust_sslcert_import.rc == 0
+
+    - name: Perform Node Sync
+      ansible.builtin.command:
+        cmd: "{{ target_group_vars.wsadmin_path }}/wsadmin.sh -conntype SOAP -lang jython -c 'AdminNodeManagement.syncActiveNodes()'"
+      register: sync_node_output
+      changed_when: true
+
+    - name: Restart dmgr service
+      become: true
+      become_user: root
+      ansible.builtin.systemd:
+        name: was_dmgr.service
+        state: restarted
+
+  ## End of block
+  always:
+    - name: Remove temporary directory for installation
+      ansible.builtin.file:
+        state: absent
+        dest: "{{ target_group_vars.cert_path }}"
+      when: target_group_vars.cert_path is defined
+
+- name: Restart Node Agent Service
+  become: true
+  become_user: root
+  ansible.builtin.systemd:
+    name: was_nodeagent.service
+    state: restarted

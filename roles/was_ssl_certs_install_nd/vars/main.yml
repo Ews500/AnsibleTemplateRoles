@@ -1,0 +1,35 @@
+# add this at top-level (NOT inside nd_vars)
+was_path: "/app/WASND"
+dmgr_profile: "Dmgr01"
+node_profile: "Custom01"
+
+nd_vars:
+  dmgr_node: "DmgrNode01"
+  dmgr_cell: "wascell"
+  dmgr_profile_dir: "{{ was_path }}/profiles/{{ dmgr_profile }}"
+  wsadmin_path: "{{ was_path }}/profiles/{{ dmgr_profile }}/bin"
+  profile_dir: "{{ was_path }}/profiles/{{ node_profile }}"
+  dmgr_soap_port: "8879"
+  java_dir: "{{ was_path }}/java/8.0"
+  cert_path: "/tmp/was_ssl_certs/{{ ansible_hostname }}"
+  nodeagent_service: was_nodeagent
+  dmgr_host: "{{ 'lpwas101dmgr' if env_code in ['RELS', 'PROD'] else 'ltwas101dmgr' }}"
+
+certs_src_dir: "certs/{{ ansible_hostname }}"
+cer_file: "{{ ansible_fqdn }}.cer"
+pfx_file: "{{ ansible_fqdn }}.pfx"   # if you still use pfx import
+key_file: "key.p12"
+client_trust_file: "trust.p12"
+
+ssl_vars:
+  newcertalias: "{{ ansible_fqdn }}"
+  nodekeystore: NodeDefaultKeyStore
+  nodetruststore: NodeDefaultTrustStore
+  celltruststore: CellDefaultTrustStore
+  storetype: pkcs12
+  encrypsize: 4096
+  algorithm: SHA256withRSA
+  org: Atradius
+  dept: Atradius-Web
+  city: Cardiff
+  country: GB

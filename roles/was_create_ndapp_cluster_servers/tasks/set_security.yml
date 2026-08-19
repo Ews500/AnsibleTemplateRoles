@@ -1,0 +1,53 @@
+---
+
+- name: Read soap.client.props file
+  tags: check_user_password
+  ansible.builtin.slurp:
+    path: "{{ profile_dir }}/properties/soap.client.props"
+  register: security_check
+
+- name: Check if loginUserid exists in security_check.content
+  tags: check_user_password
+  ansible.builtin.set_fact:
+    userid_exists: "{{ ('com.ibm.SOAP.loginUserid=' + vault.admin_username) in security_check.content | b64decode }}"
+    password_exists: "{{ ('com.ibm.SOAP.loginPassword=' + vault.admin_password) in security_check.content | b64decode }}"
+  no_log: true
+
+- name: Set line_exists fact if both conditions are true
+  tags: check_user_password
+  ansible.builtin.set_fact:
+    line_exists: "{{ userid_exists and password_exists }}"
+
+- name: Set Cluster Profile Security
+  tags: set_cluster_security
+  when: not line_exists
+  block:
+
+    - name: Add username value to attribute
+      ansible.builtin.lineinfile:
+        path: "{{ profile_dir }}/properties/soap.client.props"
+        regexp: "^com.ibm.SOAP.loginUserid="
+        line: "com.ibm.SOAP.loginUserid={{ vault.admin_username }}"
+
+    - name: Add password value to attribute
+      ansible.builtin.lineinfile:
+        path: "{{ profile_dir }}/properties/soap.client.props"
+        regexp: "^com.ibm.SOAP.loginPassword="
+        line: "com.ibm.SOAP.loginPassword={{ vault.admin_password }}"
+
+    - name: Change SOAP Connection Timeout value
+      ansible.builtin.lineinfile:
+        path: "{{ profile_dir }}/properties/soap.client.props"
+        regexp: "^com.ibm.SOAP.requestTimeout="
+        line: "com.ibm.SOAP.requestTimeout=0"
+
+    - name: Change SOAP Login Prompt
+      ansible.builtin.lineinfile:
+        path: "{{ profile_dir }}/properties/soap.client.props"
+        regexp: "^com.ibm.SOAP.loginSource=prompt"
+        line: "com.ibm.SOAP.loginSource="
+
+    - name: Encode password with PropFilePasswordEncoder
+      ansible.builtin.command:
+        cmd: "{{ profile_dir }}/bin/PropFilePasswordEncoder.sh {{ profile_dir }}/properties/soap.client.props com.ibm.SOAP.loginPassword" # noqa yaml[line-length]
+      changed_when: true

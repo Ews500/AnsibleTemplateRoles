@@ -1,0 +1,307 @@
+---
+
+# ####################### DEPLOYMENT MANAGER SERVICE #######################
+
+- name: Deployment manager service
+  when: app == "dmgr"
+  block:
+    - name: Create service - dmgr
+      become: true
+      become_user: root
+      ansible.builtin.template:
+        src: was_dmgr.service.j2
+        dest: "/etc/systemd/system/was_dmgr.service"
+        mode: "0600"
+
+    - name: Display service unit file - dmgr
+      ansible.builtin.slurp:
+        src: "/etc/systemd/system/was_dmgr.service"
+      register: file_output
+
+    - name: Print service unit file - dmgr
+      ansible.builtin.debug:
+        msg: "{{ file_output.content | b64decode }}"
+
+    - name: Enable service - dmgr
+      become: true
+      become_user: root
+      ansible.builtin.systemd:
+        name: was_dmgr.service
+        enabled: true
+        daemon_reload: true
+
+    - name: Allow webadmn to SUDO (/etc/sudoers.d/03-webteam) - dmgr
+      become: true
+      become_user: root
+      ansible.builtin.blockinfile:
+        path: /etc/sudoers.d/03-webteam
+        marker: "## {mark} was_dmgr.service ANSIBLE MANAGED BLOCK"
+        block: |
+          webadmn ALL=NOPASSWD: /bin/systemctl restart was_dmgr.service
+          webadmn ALL=NOPASSWD: /bin/systemctl stop was_dmgr.service
+          webadmn ALL=NOPASSWD: /bin/systemctl start was_dmgr.service
+          webadmn ALL=NOPASSWD: /bin/systemctl status was_dmgr.service
+
+    - name: Allow Ops team to SUDO (/etc/sudoers.d/04-opsteam) - dmgr
+      become: true
+      become_user: root
+      ansible.builtin.blockinfile:
+        path: /etc/sudoers.d/04-opsteam
+        marker: "## {mark} was_dmgr.service ANSIBLE MANAGED BLOCK"
+        block: |
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl restart was_dmgr.service
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl stop was_dmgr.service
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl start was_dmgr.service
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl status was_dmgr.service
+
+# ####################### NODE AGENT SERVICE #######################
+
+- name: Node agent service
+  when: app == "nd"
+  block:
+    - name: Create service - nodeagent
+      become: true
+      become_user: root
+      ansible.builtin.template:
+        src: was_nodeagent.service.j2
+        dest: "/etc/systemd/system/was_nodeagent.service"
+        mode: "0600"
+
+    - name: Display service unit file - nodeagent
+      ansible.builtin.slurp:
+        src: "/etc/systemd/system/was_nodeagent.service"
+      register: file_output
+
+    - name: Print service unit file - nodeagent
+      ansible.builtin.debug:
+        msg: "{{ file_output.content | b64decode }}"
+
+    - name: Enable service - nodeagent
+      become: true
+      become_user: root
+      ansible.builtin.systemd:
+        name: was_nodeagent.service
+        enabled: true
+        daemon_reload: true
+
+    - name: Allow webadmn to SUDO (/etc/sudoers.d/03-webteam) - nodeagent
+      become: true
+      become_user: root
+      ansible.builtin.blockinfile:
+        path: /etc/sudoers.d/03-webteam
+        marker: "## {mark} was_nodeagent.service ANSIBLE MANAGED BLOCK"
+        block: |
+          webadmn ALL=NOPASSWD: /bin/systemctl restart was_nodeagent.service
+          webadmn ALL=NOPASSWD: /bin/systemctl stop was_nodeagent.service
+          webadmn ALL=NOPASSWD: /bin/systemctl start was_nodeagent.service
+          webadmn ALL=NOPASSWD: /bin/systemctl status was_nodeagent.service
+
+    - name: Allow Ops team to SUDO (/etc/sudoers.d/04-opsteam) - nodeagent
+      become: true
+      become_user: root
+      ansible.builtin.blockinfile:
+        path: /etc/sudoers.d/04-opsteam
+        marker: "## {mark} was_nodeagent.service ANSIBLE MANAGED BLOCK"
+        block: |
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl restart was_nodeagent.service
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl stop was_nodeagent.service
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl start was_nodeagent.service
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl status was_nodeagent.service
+
+# ####################### STOP WAS APPSERVERS SERVICE #######################
+
+- name: Stop WAS app servers service
+  when: app == "nd"
+  block:
+    - name: Create service - stop_was_appservers
+      become: true
+      become_user: root
+      ansible.builtin.template:
+        src: stop_was_appservers.service.j2
+        dest: "/etc/systemd/system/stop_was_appservers.service"
+        mode: "0600"
+
+    - name: Display service unit file - stop_was_appservers
+      ansible.builtin.slurp:
+        src: "/etc/systemd/system/stop_was_appservers.service"
+      register: file_output
+
+    - name: Print service unit file - stop_was_appservers
+      ansible.builtin.debug:
+        msg: "{{ file_output.content | b64decode }}"
+
+    - name: Enable service - stop_was_appservers
+      become: true
+      become_user: root
+      ansible.builtin.systemd:
+        name: stop_was_appservers.service
+        enabled: true
+        daemon_reload: true
+        state: started
+
+# ####################### APPLICATION SERVER SERVICE (only standalone) #######################
+
+- name: Application server service
+  when: app != "dmgr" and app != "nd" and app != "ihs"
+  block:
+    - name: Fail for managed app servers (systemd not supported / recommended)
+      ansible.builtin.fail:
+        msg: "ERROR - systemd service WON'T BE CREATED for managed application servers (ND) - {{ app }} "
+      when: dmgr_host is defined
+
+    - name: Create service - standalone app server
+      become: true
+      become_user: root
+      ansible.builtin.template:
+        src: was_appserver.service.j2
+        dest: "/etc/systemd/system/was_{{ env_code | lower }}{{ app }}.service"
+        mode: "0600"
+
+    - name: Display service unit file - standalone app server
+      ansible.builtin.slurp:
+        src: "/etc/systemd/system/was_{{ env_code | lower }}{{ app }}.service"
+      register: file_output
+
+    - name: Print service unit file - standalone app server
+      ansible.builtin.debug:
+        msg: "{{ file_output.content | b64decode }}"
+
+    - name: Enable service - standalone app server
+      become: true
+      become_user: root
+      ansible.builtin.systemd:
+        name: "was_{{ env_code | lower }}{{ app }}.service"
+        enabled: "{{ enable_services | default('true') }}"
+        daemon_reload: true
+
+    - name: Allow webadmn to SUDO (/etc/sudoers.d/03-webteam) - standalone app server
+      become: true
+      become_user: root
+      ansible.builtin.blockinfile:
+        path: /etc/sudoers.d/03-webteam
+        marker: "## {mark} was_{{ env_code | lower }}{{ app }}.service ANSIBLE MANAGED BLOCK"
+        block: |
+          webadmn ALL=NOPASSWD: /bin/systemctl restart was_{{ env_code | lower }}{{ app }}.service
+          webadmn ALL=NOPASSWD: /bin/systemctl stop was_{{ env_code | lower }}{{ app }}.service
+          webadmn ALL=NOPASSWD: /bin/systemctl start was_{{ env_code | lower }}{{ app }}.service
+          webadmn ALL=NOPASSWD: /bin/systemctl status was_{{ env_code | lower }}{{ app }}.service
+
+    - name: Allow Ops team to SUDO (/etc/sudoers.d/04-opsteam) - standalone app server
+      become: true
+      become_user: root
+      ansible.builtin.blockinfile:
+        path: /etc/sudoers.d/04-opsteam
+        marker: "## {mark} was_{{ env_code | lower }}{{ app }}.service ANSIBLE MANAGED BLOCK"
+        block: |
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl restart was_{{ env_code | lower }}{{ app }}.service
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl stop was_{{ env_code | lower }}{{ app }}.service
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl start was_{{ env_code | lower }}{{ app }}.service
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl status was_{{ env_code | lower }}{{ app }}.service
+
+######################## IHS SERVER SERVICE #######################
+
+- name: IHS Server service
+  when: app == "ihs"
+  block:
+    - name: Create service - ihs
+      become: true
+      become_user: root
+      ansible.builtin.template:
+        src: was_ihs.service.j2
+        dest: "/etc/systemd/system/was_ihs.service"
+        mode: "0600"
+
+    - name: Display service unit file - ihs
+      ansible.builtin.slurp:
+        src: "/etc/systemd/system/was_ihs.service"
+      register: file_output
+
+    - name: Print service unit file - ihs
+      ansible.builtin.debug:
+        msg: "{{ file_output.content | b64decode }}"
+
+    - name: Enable service - ihs
+      become: true
+      become_user: root
+      ansible.builtin.systemd:
+        name: was_ihs.service
+        enabled: true
+        daemon_reload: true
+
+    - name: Allow webadmn to SUDO (/etc/sudoers.d/03-webteam) - ihs
+      become: true
+      become_user: root
+      ansible.builtin.blockinfile:
+        path: /etc/sudoers.d/03-webteam
+        marker: "## {mark} was_ihs.service ANSIBLE MANAGED BLOCK"
+        block: |
+          webadmn ALL=NOPASSWD: /bin/systemctl restart was_ihs.service
+          webadmn ALL=NOPASSWD: /bin/systemctl stop was_ihs.service
+          webadmn ALL=NOPASSWD: /bin/systemctl start was_ihs.service
+          webadmn ALL=NOPASSWD: /bin/systemctl status was_ihs.service
+
+    - name: Allow Ops team to SUDO (/etc/sudoers.d/04-opsteam) - ihs
+      become: true
+      become_user: root
+      ansible.builtin.blockinfile:
+        path: /etc/sudoers.d/04-opsteam
+        marker: "## {mark} was_ihs.service ANSIBLE MANAGED BLOCK"
+        block: |
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl restart was_ihs.service
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl stop was_ihs.service
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl start was_ihs.service
+          OPS_TEAM ALL=NOPASSWD: /bin/systemctl status was_ihs.service
+
+######################## IHS ADMIN SERVER SERVICE #######################
+
+    - name: Admin IHS service for ND hosts
+      when: ihs_admin | default(false)
+      block:
+        - name: Create service - ihs admin
+          become: true
+          become_user: root
+          ansible.builtin.template:
+            src: was_ihs_admin.service.j2
+            dest: "/etc/systemd/system/was_ihs_admin.service"
+            mode: "0600"
+
+        - name: Display service unit file - ihs admin
+          ansible.builtin.slurp:
+            src: "/etc/systemd/system/was_ihs_admin.service"
+          register: file_output
+
+        - name: Print service unit file - ihs admin
+          ansible.builtin.debug:
+            msg: "{{ file_output.content | b64decode }}"
+
+        - name: Enable service - ihs admin
+          become: true
+          become_user: root
+          ansible.builtin.systemd:
+            name: was_ihs_admin.service
+            enabled: true
+            daemon_reload: true
+
+        - name: Allow webadmn to SUDO (/etc/sudoers.d/03-webteam) -  ihs admin
+          become: true
+          become_user: root
+          ansible.builtin.blockinfile:
+            path: /etc/sudoers.d/03-webteam
+            marker: "## {mark} was_ihs_admin.service ANSIBLE MANAGED BLOCK"
+            block: |
+              webadmn ALL=NOPASSWD: /bin/systemctl restart was_ihs_admin.service
+              webadmn ALL=NOPASSWD: /bin/systemctl stop was_ihs_admin.service
+              webadmn ALL=NOPASSWD: /bin/systemctl start was_ihs_admin.service
+              webadmn ALL=NOPASSWD: /bin/systemctl status was_ihs_admin.service
+
+        - name: Allow Ops team to SUDO (/etc/sudoers.d/04-opsteam) - ihs admin
+          become: true
+          become_user: root
+          ansible.builtin.blockinfile:
+            path: /etc/sudoers.d/04-opsteam
+            marker: "## {mark} was_ihs_admin.service ANSIBLE MANAGED BLOCK"
+            block: |
+              OPS_TEAM ALL=NOPASSWD: /bin/systemctl restart was_ihs_admin.service
+              OPS_TEAM ALL=NOPASSWD: /bin/systemctl stop was_ihs_admin.service
+              OPS_TEAM ALL=NOPASSWD: /bin/systemctl start was_ihs_admin.service
+              OPS_TEAM ALL=NOPASSWD: /bin/systemctl status was_ihs_admin.service

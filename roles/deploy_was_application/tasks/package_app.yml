@@ -1,0 +1,94 @@
+- name: Create a directory for the resulting EAR file
+  ansible.builtin.file:
+    path: "{{ deploy_dir.path }}/expander"
+    state: directory
+    mode: "0740"
+  register: expander_dir
+
+- name: Expand EAR file # noqa no-changed-when
+  ansible.builtin.command:
+    cmd: "{{ was_path }}/bin/EARExpander.sh -ear {{ ear_st.stat.path }} -operationDir {{ expander_dir.path }} -operation expand -expansionFlags war" # noqa yaml[line-length]
+  register: expand_output
+  failed_when: expand_output.rc != 0
+
+- name: EAR file expanded
+  ansible.builtin.debug:
+    msg: "{{ expand_output.stdout }}"
+
+- name: Copy properties files templates into application
+  ansible.builtin.template:
+    src: "{{ config_file.src_file }}"
+    dest: "{{ expander_dir.path }}/{{ config_file.dst_file }}"
+    owner: "{{ was_username }}"
+    group: "{{ was_username }}"
+    mode: "0640"
+  when: custom_props_st.stat.exists
+  with_items: "{{ app_vars.config_prop_files | default([]) }}"
+  loop_control:
+    loop_var: config_file
+
+- name: Copy properties files into application
+  ansible.builtin.copy:
+    src: "{{ config_file.src_file }}"
+    dest: "{{ expander_dir.path }}/{{ config_file.dst_file }}"
+    remote_src: true
+    owner: "{{ was_username }}"
+    group: "{{ was_username }}"
+    mode: "0640"
+  when: not custom_props_st.stat.exists
+  with_items: "{{ app_vars.config_prop_files | default([]) }}"
+  loop_control:
+    loop_var: config_file
+
+- name: Copy extra directories to expanded EAR
+  ansible.builtin.copy:
+    src: "{{ copy_dir.src_dir }}"
+    dest: "{{ expander_dir.path }}/{{ copy_dir.dst_dir }}"
+    remote_src: true
+    owner: "{{ was_username }}"
+    group: "{{ was_username }}"
+    mode: preserve # to keep same permissions as the source file
+  with_items: "{{ env_vars.copy_extra_dirs | default([]) }}"
+  loop_control:
+    loop_var: copy_dir
+  when: env_vars.copy_extra_dirs is defined
+
+- name: Collapse EAR file # noqa no-changed-when
+  ansible.builtin.command:
+    cmd: "{{ was_path }}/bin/EARExpander.sh -ear {{ deploy_dir.path }}/{{ env_vars.app_name }}.ear -operationDir {{ expander_dir.path }} -operation collapse" # noqa yaml[line-length]
+  register: collapse_output
+  failed_when: collapse_output.rc != 0
+
+- name: EAR file collapsed
+  ansible.builtin.debug:
+    msg: "{{ collapse_output.stdout }}"
+
+- name: Copy EAR file to installableApps dir
+  ansible.builtin.copy:
+    src: "{{ deploy_dir.path }}/{{ env_vars.app_name }}.ear"
+    dest: "{{ was_path }}/profiles/{{ deployment_vars.profile_name }}/installableApps/"
+    owner: "{{ was_username }}"
+    group: "{{ was_username }}"
+    mode: "0740"
+    remote_src: true
+    backup: true # back up the original EAR if it differs from the copied version
+
+- name: Find existing EAR backups
+  ansible.builtin.find:
+    paths: "{{ was_path }}/profiles/{{ deployment_vars.profile_name }}/installableApps/"
+    patterns: "{{ env_vars.app_name }}.ear.*"
+    use_regex: false
+    file_type: file
+  register: ear_backups
+
+- name: Sort and trim backups list to keep only the 3 most recent
+  ansible.builtin.set_fact:
+    backups_to_delete: >-
+      {{ (ear_backups.files | sort(attribute='mtime') | reverse)[3:] }}
+
+- name: Delete old EAR backups
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ backups_to_delete }}"
+  when: backups_to_delete | length > 0

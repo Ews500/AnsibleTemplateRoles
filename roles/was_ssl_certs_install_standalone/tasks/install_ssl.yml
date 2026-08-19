@@ -1,0 +1,91 @@
+- name: Backup Standalone Application Server Profile Configs
+  no_log: true
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/backupConfig.sh {{ profile_dir }}/{{ profile_name }}_config_{{ ansible_date_time.date }}.zip
+    -nostop -quiet
+  register: app_jvm_config_backup
+  changed_when: false
+  failed_when: app_jvm_config_backup.rc != 0
+
+- name: Check if certificate directory exists
+  ansible.builtin.stat:
+    path: "{{ cert_path }}"
+  register: cert_dir
+
+- name: Create directory if it does not exist
+  ansible.builtin.file:
+    path: "{{ cert_path }}"
+    state: directory
+    mode: '0755'
+  when: not cert_dir.stat.exists
+
+- name: Copy PFX into remote staging directory as Keystore Certificate file
+  ansible.builtin.copy:
+    src: "{{ certs_src_dir }}/{{ pfx_file }}"     # from role files/
+    dest: "{{ cert_path }}/{{ key_file }}"  # on remote
+    mode: '0644'
+
+- name: Copy PEM cert into remote staging directory (if needed later)
+  ansible.builtin.copy:
+    src: "{{ certs_src_dir }}/{{ cer_file }}"
+    dest: "{{ cert_path }}/{{ cer_file }}"
+    mode: '0644'
+
+- name: Install SSL Certificate to Standalone Apps Node Default KeyStore
+  ansible.builtin.command: >
+    {{ java_dir }}/jre/bin/ikeycmd -cert -import -file  {{ cert_path }}/{{ key_file }}
+    -type PKCS12 -target {{ profile_dir }}/config/cells/{{ env_vars.cell_name }}/nodes/{{ node_name }}/{{ key_file }}
+    -target_pw {{ vault.default_ssl_pwd }} -target_type PKCS12 -pw {{ env_vars.tgt_ssl_password }}
+  register: sslcert_install
+  changed_when: sslcert_install.rc == 0
+
+- name: Save the Installed SSL Cert in Key Store
+  ansible.builtin.command:
+    cmd: "{{ wsadmin_path }}/wsadmin.sh -conntype SOAP -lang jython -c 'AdminConfig.save()'"
+  register: sslcert_install_save
+  changed_when: true
+
+- name: Assign installed SSL Certificate to webSphere Application Server JVM
+  ansible.builtin.command: >
+    {{ wsadmin_path }}/wsadmin.sh -conntype NONE -lang jython -c "
+    AdminTask.modifySSLConfig('[-alias NodeDefaultSSLSettings -scopeName (cell):{{ env_vars.cell_name }}:(node):{{ node_name }}
+    -keyStoreName {{ ssl_vars.nodekeystore }} -keyStoreScopeName (cell):{{ env_vars.cell_name }}:(node):{{ node_name }}
+    -trustStoreName {{ ssl_vars.nodetruststore }} -trustStoreScopeName (cell):{{ env_vars.cell_name }}:(node):{{ node_name }}
+    -serverKeyAlias {{ ssl_vars.newcertalias }} -clientKeyAlias {{ ssl_vars.newcertalias }}]')"
+  register: assign_sslcert
+  changed_when: assign_sslcert.rc == 0
+
+- name: Save SSL Enabled WebSphere configuration
+  ansible.builtin.command:
+    cmd: "{{ wsadmin_path }}/wsadmin.sh -conntype NONE -lang jython -c 'AdminConfig.save()'"
+  changed_when: true
+
+- name: Import the server signer certificate into the client truststore for SOAP Connection
+  ansible.builtin.command: >
+    {{ java_dir }}/jre/bin/ikeycmd -cert -add -db {{ profile_dir }}/etc/{{ client_trust_file }}
+    -pw {{ vault.default_ssl_pwd }} -label {{ ssl_vars.newcertalias }} -file {{ cert_path }}/{{ cer_file }}
+    -type PKCS12
+  register: client_trust_sslcert_import
+  changed_when: client_trust_sslcert_import.rc == 0
+
+- name: Restart service - Standalone
+  tags: restart_service
+  when: env_vars.dmgr_host is not defined
+  block:
+
+    - name: Stop Server
+      tags: stop_server
+      ansible.builtin.include_role:
+        name: stop_service
+
+    - name: Start Server
+      tags: start_server
+      ansible.builtin.include_role:
+        name: start_service
+
+  always:
+    - name: Remove temporary directory for installation
+      ansible.builtin.file:
+        state: absent
+        dest: "{{ cert_path }}"
+      when: cert_path is defined

@@ -1,0 +1,58 @@
+---
+
+- name: Create array for host
+  ansible.builtin.set_fact:
+    url_array: []
+
+- name: Copy monitor_url script to host
+  tags: [centreon_scripts, copy_scripts_only]
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "{{ nagios_plugins_dir | default('/usr/local/nagios/libexec') }}/{{ item }}"
+    mode: '0755'
+    group: root
+    owner: root
+  with_items:
+    - web_check_urls_from_list.sh
+
+- name: Configure NRPE
+  tags: [centreon_scripts, copy_scripts_only]
+  register: add_nrpe_cmds
+  ansible.builtin.template:
+    src: "nrpe_web_cmds.cfg"
+    dest: "{{ nrpe_cmd_dir | default('/etc/nrpe.d') }}/nrpe_web_cmds.cfg"
+    mode: '0644'
+    group: root
+    owner: root
+  notify: Restart NRPE service
+
+- name: Get URLs
+  ansible.builtin.include_tasks: get_urls.yml
+  loop: "{{ group_names }}"
+  loop_control:
+    loop_var: app
+  when:
+    - app != "standalone"
+    - app != "nd"
+    - app != "ihs"
+
+- name: Add URL lines to the file
+  ansible.builtin.lineinfile:
+    path: /opt/eteam/monitor_urls.list
+    line: "{{ item }}"
+    create: true
+    mode: '0644'
+    group: webadmn
+    owner: webadmn
+  with_items: "{{ url_array }}"
+
+- name: Add addition URLs to the monitoring file file
+  ansible.builtin.lineinfile:
+    path: /opt/eteam/monitor_urls.list
+    line: "{{ item }}"
+    create: true
+    mode: '0644'
+    group: webadmn
+    owner: webadmn
+  with_items: "{{ additional_urls }}"
+  when: additional_urls is defined

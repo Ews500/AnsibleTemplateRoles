@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Root>
+                <template id="RIReportCalculation">
+                <emailFrom>cabrillo@atradius.com</emailFrom>
+                <emailTo>{{ env_vars.emailto }}</emailTo>
+                <subject>Cabrillo Highway-Calculation Batch({{ env_vars.env_name }})</subject>
+                <body>
+                Hello,
+
+                The reports for the job [{0}] are generated at location {{ env_vars.report_loc }}[{1}].
+                1) Total number of business errors occurred: [{2}].
+                2) Gross data has been already loaded: [{3}].
+                3) Lines are not present for the AP Invoice Header: [{4}].
+                4) Distributions are not present for the AR Invoice Lines: [{5}].
+                5) Distributions are not present for the Unified Header: [{6}].
+                6) Invalid Gross Data: [{7}].
+                7) Exchange Rate is not found for the general ledger date: [{8}].
+                8) Manual agreement grouping cannot be considered for calculation: [{9}].
+                9) Non-ReInsurance agreement grouping cannot be considered for calculation: [{10}].
+                10) Invoice range is not within the agreement grouping range: [{11}].
+                11) Agreement grouping not approved for all years in the invoice span: [{12}].
+                12) Agreements are not sufficient to cover the complete invoice period: [{13}].
+                13) Agreement Grouping does not exist or Agreement Grouping status is not live, closed or commuted: [{14}].
+                14) Open Operating Cycle is not found for the general ledger date: [{15}].
+                15) Invalid sequencing of agreements in the partnership  grouping for the grouping slice: [{16}].
+                16) Agreements in the partnership  grouping for the grouping slice are disconnected: [{17}].
+                17) Content or Sequencing of the Agreement Grouping is invalid: [{18}].
+                18) Agreement Grouping status is either created or pending approval and cannot be considered for calculation: [{19}].
+                19) Fronter invoice is generated without a fronter agreement in the grouping, for given invoice range: [{20}].
+                20) Number of batch errors occurred: [{21}].
+
+                Regards,
+                RI
+
+                PS: This is a system generated mail. Please do not reply to this mail.
+                </body>
+        </template>
+        <template id="RIReportBooking">
+                <emailFrom>cabrillo@atradius.com</emailFrom>
+                <emailTo>{{ env_vars.emailto }}</emailTo>
+                <subject>Cabrillo Highway- Booking Batch ({{ env_vars.env_name }})</subject>
+                <body>
+                Hello,
+
+                The reports for the job [{0}] are generated at location {{ env_vars.report_loc }}[{1}].
+                1) Total number of business errors occurred: [{2}].
+                2) Ornnn Id not found: [{3}].
+                3) Number of batch errors occurred: [{4}].
+
+
+                Regards,
+                RI
+
+                PS: This is a system generated mail. Please do not reply to this mail.
+                </body>
+        </template>
+</Root>

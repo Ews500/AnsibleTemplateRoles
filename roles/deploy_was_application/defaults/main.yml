@@ -1,0 +1,25 @@
+---
+
+# Application options
+app_defaults:
+  mod_classldr: false
+  war_classloader_policy: "MULTIPLE"
+  app_options:
+    - name: "-usedefaultbindings"
+      type: "string"
+      value: "" # This option does not require a value. The default setting is nousedefaultbindings.
+    - name: "-MapWebModToVH"
+      type: "array"
+      value:
+        - "{{ app_vars.mapweb_mod_to_vh }}"
+        - "{{ app_vars.war_name }},WEB-INF/web.xml"
+        - "default_host"
+    - name: "-nopreCompileJSPs"
+      type: "string"
+      value: "" # This option is the default setting and does not require a value.
+    - name: "-distributeApp"
+      type: "string"
+      value: "" # This option is the default setting and does not require a value.
+    - name: "-nodeployejb"
+      type: "string"
+      value: "" # This option is the default setting and does not require a value.

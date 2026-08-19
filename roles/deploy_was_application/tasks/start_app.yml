@@ -1,0 +1,27 @@
+- name: Copy start_app.py script template
+  ansible.builtin.template:
+    src: "{{ deployment_vars.start_script_name }}"
+    dest: "{{ deploy_dir.path }}/{{ deployment_vars.start_script_name }}"
+    mode: "0600"
+
+- name: Set wsadmin_start_cmd fact
+  ansible.builtin.set_fact:
+    wsadmin_start_cmd: "{{ deployment_vars.wsadmin_path }}/wsadmin.sh -conntype soap \
+      -host {{ soap_host | default('localhost') }} \
+      -port {{ deployment_vars.was_soap_port }} \
+      -lang jython \
+      -f {{ deploy_dir.path }}/{{ deployment_vars.start_script_name }}"
+
+- name: Print wsadmin command to execute
+  ansible.builtin.debug:
+    msg: "{{ wsadmin_start_cmd }}"
+
+- name: Start application (Jython) # noqa no-changed-when
+  ansible.builtin.command:
+    cmd: "{{ wsadmin_start_cmd }}"
+  register: start_output
+  failed_when: "start_output.rc != 0 and 'already started' not in start_output.stdout"
+
+- name: Start app output
+  ansible.builtin.debug:
+    msg: "{{ start_output.stdout }}"

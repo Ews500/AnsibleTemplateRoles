@@ -1,0 +1,69 @@
+- name: Check if the profile directory exists
+  tags: check_profile
+  ansible.builtin.stat:
+    path: "{{ profile_dir }}"
+  register: profile_exists
+
+- name: Set profile_exists_flag based on profile existence
+  tags: check_profile
+  ansible.builtin.set_fact:
+    profile_exists_flag: "{{ profile_exists.stat.exists }}"
+
+# Run the remaining tasks only if the cluster exists or was created
+- name: Configure WebSphere Security for DataSource JAAS User
+  tags: config_jaas_security
+  when: profile_exists_flag
+  block:
+
+    - name: Retrieve server node name
+      ansible.builtin.command: >
+        {{ profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP -c "
+        serverID = AdminControl.completeObjectName('WebSphere:type=Server,name={{ env_vars.server_name }},*');
+        print AdminControl.getAttribute(serverID, 'nodeName')"
+      register: node_name_output
+      changed_when: false
+      failed_when: node_name_output.rc != 0
+
+    - name: Set fact for extracted node name
+      ansible.builtin.set_fact:
+        node_name: "{{ node_name_output.stdout_lines[-1] }}"
+
+    - name: Delete All JDBC providers
+      tags: delete_jdbc_provider
+      ansible.builtin.include_tasks: jdbc_provider_del.yml
+
+    - name: Delete JAAS Users and JDBC data sources
+      tags: jaas_dbs_delete
+      no_log: true # To avoid printing user/pw in output
+      ansible.builtin.include_tasks: jaas_dbs_del.yml
+      loop: "{{ env_vars.jdbc_datasource_list }}"
+      loop_control:
+        loop_var: jdbc_datasource
+      when: env_vars.jdbc_datasource_list is defined
+
+    - name: Setup JDBC providers
+      tags: create_jdbc_provider
+      ansible.builtin.include_tasks: jdbc_provider_config.yml
+      loop: "{{ jdbc_provider_list }}"
+      loop_control:
+        loop_var: jdbc_provider
+      when: jdbc_provider_list is defined
+
+    - name: Create JAAS Users and JDBC data sources
+      tags: jaas_dbs_create
+      no_log: true # To avoid printing user/pw in output
+      ansible.builtin.include_tasks: jaas_jdbs_create.yml
+      loop: "{{ env_vars.jdbc_datasource_list }}"
+      loop_control:
+        loop_var: jdbc_datasource
+      when: env_vars.jdbc_datasource_list is defined
+
+    - name: Stop Server
+      tags: stop_server
+      ansible.builtin.include_role:
+        name: stop_service
+
+    - name: Start Server
+      tags: start_server
+      ansible.builtin.include_role:
+        name: start_service

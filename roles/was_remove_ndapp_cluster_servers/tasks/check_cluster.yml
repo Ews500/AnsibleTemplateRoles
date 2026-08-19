@@ -1,0 +1,21 @@
+# Check if Cluster exists
+- name: Check on Deployment Manager that Cluster exists
+  tags: check_cluster
+  delegate_to: "{{ env_vars.dmgr_host | default(omit) }}"
+  run_once: "{{ 'true' if env_vars.dmgr_host is defined else 'false' }}"
+  block:
+    - name: Check on Deployment Manager if Cluster exists
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython
+        -host {{ env_vars.dmgr_host }} -port {{ env_vars.dmgr_soap_port }}
+        -c "AdminClusterManagement.checkIfClusterExists('{{ env_vars.cluster_name }}')"
+      register: cluster_check_output
+      changed_when: false
+
+    - name: Set cluster_exists_flag based on cluster existence
+      ansible.builtin.set_fact:
+        cluster_exists_flag: "{{ 'true' in cluster_check_output.stdout_lines[-1] }}"
+
+    - name: Debug cluster existence
+      ansible.builtin.debug:
+        msg: "Cluster '{{ env_vars.cluster_name }}' exists: {{ cluster_exists_flag }}"

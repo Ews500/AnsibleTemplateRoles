@@ -1,0 +1,37 @@
+- name: Check if the cluster exists
+  tags: check_cluster
+  ansible.builtin.include_tasks: check_cluster.yml
+
+- name: Remove cluster members if cluster exists
+  tags: remove_cluster_members
+  ansible.builtin.include_tasks: remove_servers.yml
+  when: cluster_exists_flag
+
+- name: Remove cluster if it exists
+  tags: remove_cluster
+  ansible.builtin.include_tasks: remove_cluster.yml
+  when: cluster_exists_flag
+
+# Run the remaining tasks only if the cluster was removed successfully
+
+- name: Restart Node Agents
+  tags: restart_node_agents
+  when: not cluster_exists_flag
+  ansible.builtin.include_tasks: restart_nodeagent.yml
+
+- name: Restart Deployment Manager
+  tags: restart_dmgr
+  run_once: true
+  when: not cluster_exists_flag
+  ansible.builtin.include_tasks: restart_dmgr.yml
+
+# Run the remaining tasks only if the cluster was removed successfully
+- name: Clean-up any remaining config
+  tags: cleanup_config
+  when: not cluster_exists_flag
+  block:
+    - name: Remove cluster logs directory
+      tags: remove_logs_dir
+      ansible.builtin.file:
+        path: "{{ was_path }}/profiles/{{ env_vars.profile_name }}/logs/{{ env_vars.server_name }}"
+        state: absent

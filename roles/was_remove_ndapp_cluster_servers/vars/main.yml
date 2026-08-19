@@ -1,0 +1,7 @@
+dmgr_profile_dir: "{{ was_path }}/profiles/{{ dmgr_profile }}"
+dmgr_profile: "Dmgr01"
+dmgr_service: was_dmgr
+stop_dmgr: stopManager.sh
+node_name: "{{ ansible_hostname }}Node01"
+nodeagent_service: was_nodeagent
+stop_nodeagent: stopNode.sh

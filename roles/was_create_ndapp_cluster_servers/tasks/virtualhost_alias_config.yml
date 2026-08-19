@@ -1,0 +1,21 @@
+- name: Create & configure Virtual Host
+  tags: vhost_config
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  block:
+
+    - name: Copy create_virtualhost.props template
+      ansible.builtin.template:
+        src: "create_virtualhost.props"
+        dest: "{{ dmgr_profile_dir }}/create_vhost_{{ virtual_host.name }}.props"
+        mode: "0600"
+
+    - name: Create Virtual Host
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c "
+        AdminTask.applyConfigProperties('[-propertiesFileName {{ dmgr_profile_dir }}/create_vhost_{{ virtual_host.name }}.props]');
+        AdminConfig.save();
+        AdminNodeManagement.syncActiveNodes()"
+      changed_when: vhost_creation.rc == 0
+      failed_when: vhost_creation.rc != 0 and 'ADMG0660E' not in vhost_creation.stdout
+      register: vhost_creation

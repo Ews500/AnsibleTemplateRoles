@@ -1,0 +1,18 @@
+[Unit]
+Description=IBM HTTP Admin Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+PIDFile={{ was_path }}/logs/admin.pid
+ExecStart={{ was_path }}/bin/adminctl start
+ExecStop={{ was_path }}/bin/adminctl stop
+PrivateTmp=true
+User=webadmn
+Group=webadmn
+TimeoutSec=180
+LimitNOFILE=infinity
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,71 @@
+- name: Check if nfstemp is mounted
+  block:
+    - name: Check for nfstemp
+      register: nfstemp
+      ansible.builtin.stat:
+        path: "{{ shared_mount }}"
+
+- name: Check a shared mount is available
+  ansible.builtin.assert:
+    that:
+      - nfstemp.stat.exists
+    fail_msg: "A shared_mount {{ shared_mount }} must be defined!"
+    quiet: true
+
+- name: Install WAS
+  tags: install_was
+  block:
+
+    - name: Create temporary directory
+      ansible.builtin.tempfile:
+        state: directory
+        path: "/app"
+        prefix: "install-was-binaries-"
+      register: install_dir
+
+    - name: Create support directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+        owner: webadmn
+        group: webadmn
+      with_items:
+        - "{{ install_dir.path }}/was/"
+        - "{{ install_dir.path }}/sdk/"
+
+    - name: Extract WebSphere Application Server V9 Files
+      ansible.builtin.unarchive:
+        src: "{{ was_bin_dir }}/{{ was_filename }}"
+        dest: "{{ install_dir.path }}/was/"
+        copy: false
+
+    - name: Extract IBM SDK Java
+      ansible.builtin.unarchive:
+        src: "{{ java_bin_dir }}/{{ java_filename }}"
+        dest: "{{ install_dir.path }}/sdk/"
+        copy: false
+
+    - name: Generate WebSphere Application Server Response file
+      ansible.builtin.template:
+        src: "{{ tpl_file }}"
+        dest: "{{ install_dir.path }}/{{ rsp_file }}"
+        mode: "0755"
+
+    - name: Print WAS response file
+      ansible.builtin.debug:
+        msg: "{{ lookup('ansible.builtin.template', './roles/was_install/templates/was_install.rsp.j2') }}"
+
+    - name: Install WebSphere Application Server
+      ansible.builtin.command: >
+        {{ iim_install_location }}/eclipse/tools/imcl -input {{ install_dir.path }}/{{ rsp_file }} -sP -acceptLicense
+        -record {{ install_dir.path }}/was_install_{{ lookup('pipe', 'date +%Y%m%d%H%M') }}.xml -log {{ install_dir.path }}/{{ log_file }}
+      changed_when: true
+
+  ## End of block
+  always:
+    - name: Remove temporary directory for installation
+      ansible.builtin.file:
+        state: absent
+        dest: "{{ install_dir.path }}"
+      when: install_dir.path is defined

@@ -1,0 +1,14 @@
+# roles/was_monitoring/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/was_monitoring/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the was_monitoring role
+    description:
+      - This is the main entrypoint for the C(was_monitoring) role.
+      - Configures monitoring for WebSphere Application Server environments.
+      - Deploys monitoring scripts, configures health checks, and integrates with external systems.
+      - Supports custom monitoring endpoints and user configuration.
+    version_added: 1.0.0
+    author:
+      - Daniel Pitt (@DJPITT92)

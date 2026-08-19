@@ -1,0 +1,13 @@
+[Unit]
+Description=WebSphere Application Server Host Shutdown Script
+Before=shutdown.target reboot.target halt.target
+After=local-fs.target
+
+[Service]
+Type=forking
+ExecStart=/bin/true
+ExecStop=/sysman/operators/stop_websphere_all_appservers
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

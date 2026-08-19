@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+
+	<Properties>
+		<Property name="LOG_LOCATION">{{ was_path }}/profiles/{{ env_vars.profile_name }}/logs/applogs</Property>
+		<Property name="ROLLOVER_STRATEGY">2D</Property>
+	</Properties>
+
+	<Appenders>
+
+		<RollingFile name="infoLogger" fileName="${LOG_LOCATION}/info.log"
+			filePattern="${LOG_LOCATION}/info-%d{yyyy-MM-dd}.log">
+
+			<LevelRangeFilter minLevel="INFO" maxLevel="INFO"
+				onMatch="ACCEPT" onMismatch="DENY" />
+			<JsonTemplateLayout eventTemplateUri="classpath:WEB-INF/config/EcsLayout.json"
+				locationInfoEnabled="true" />
+			<Policies>
+				<TimeBasedTriggeringPolicy interval="1"
+					modulate="true" />
+			</Policies>
+			<DefaultRolloverStrategy>
+				<Delete basePath="${LOG_LOCATION}" maxDepth="1">
+					<IfFileName glob="info-*.log">
+						<IfLastModified age="${ROLLOVER_STRATEGY}" />
+					</IfFileName>
+				</Delete>
+			</DefaultRolloverStrategy>
+		</RollingFile>
+
+		<RollingFile name="errorLogger" fileName="${LOG_LOCATION}/error.log"
+			filePattern="${LOG_LOCATION}/error-%d{yyyy-MM-dd}.log">
+
+			<LevelRangeFilter minLevel="FATAL" maxLevel="WARN"
+				onMatch="ACCEPT" onMismatch="DENY" />
+			<JsonTemplateLayout eventTemplateUri="classpath:WEB-INF/config/EcsLayout.json"
+				locationInfoEnabled="true" />
+			<Policies>
+				<TimeBasedTriggeringPolicy interval="1"
+					modulate="true" />
+			</Policies>
+			<DefaultRolloverStrategy>
+				<Delete basePath="${LOG_LOCATION}" maxDepth="1">
+					<IfFileName glob="error-*.log">
+						<IfLastModified age="${ROLLOVER_STRATEGY}" />
+					</IfFileName>
+				</Delete>
+			</DefaultRolloverStrategy>
+		</RollingFile>
+
+	</Appenders>
+	<Loggers>
+		<!-- avoid duplicated logs with additivity=false -->
+		<Logger name="com.atradius" level="INFO" additivity="false">
+			<AppenderRef ref="infoLogger" />
+			<AppenderRef ref="errorLogger" />
+		</Logger>
+		<Root level="ERROR">
+			<AppenderRef ref="errorLogger" />
+		</Root>
+	</Loggers>
+</Configuration>

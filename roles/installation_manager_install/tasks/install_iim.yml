@@ -1,0 +1,51 @@
+- name: Check if nfstemp is mounted
+  block:
+    - name: Check for nfstemp
+      register: nfstemp
+      ansible.builtin.stat:
+        path: "{{ shared_mount }}"
+
+- name: Check a shared mount is available
+  ansible.builtin.assert:
+    that:
+      - nfstemp.stat.exists
+    fail_msg: "A shared_mount {{ shared_mount }} must be defined!"
+    quiet: true
+
+- name: Install Installation Manager
+  tags: install_iim
+  block:
+
+    - name: Create temporary directory
+      ansible.builtin.tempfile:
+        state: directory
+        path: "/app"
+        prefix: "install-iim-binaries-{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}-"
+      register: install_dir
+
+    - name: Extract IBM Installation Manager
+      ansible.builtin.unarchive:
+        src: "{{ binary_dirs.iim }}/{{ iim_bin_file }}"
+        dest: "{{ install_dir.path }}"
+        copy: false
+
+    - name: Generate Installation Manager Response file
+      ansible.builtin.template:
+        src: "{{ tpl_file }}"
+        dest: "{{ install_dir.path }}/{{ rsp_file }}"
+        mode: '0755'
+
+    - name: Install/Update IBM Installation Manager
+      ansible.builtin.command: >
+        {{ install_dir.path }}/userinstc -input {{ install_dir.path }}/{{ rsp_file }} -acceptLicense
+        -installationDirectory {{ iim_install_location }} -dataLocation {{ iim_data_location }} -log {{ install_dir.path }}/{{ log_file }}
+      register: cout
+      changed_when: (cout.stdout.find('Installed com.ibm.cic.agent') != -1)
+
+  ## End of block
+  always:
+    - name: Remove temporary directory for installation
+      ansible.builtin.file:
+        state: absent
+        dest: "{{ install_dir.path }}"
+      when: install_dir.path is defined

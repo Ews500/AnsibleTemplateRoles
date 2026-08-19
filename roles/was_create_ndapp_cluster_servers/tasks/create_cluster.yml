@@ -1,0 +1,37 @@
+- name: Create Application Cluster on Deployment Manager
+  tags: create_cluster
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  block:
+
+    - name: Create Cluster for App
+      ansible.builtin.command: |
+        {{ was_path }}/profiles/{{ dmgr_profile }}/bin/wsadmin.sh -conntype SOAP -lang jython -c
+        "AdminTask.createCluster('[-clusterConfig [-clusterName {{ env_vars.cluster_name }}] -replicationDomain [-createDomain true]]')"
+      register: cluster_creation_result
+      changed_when: "'cluster.xml#ServerCluster_' in cluster_creation_result.stdout_lines[-1]"
+
+    - name: Set cluster_exists_flag after cluster creation
+      ansible.builtin.set_fact:
+        cluster_exists_flag: true
+      when: "'cluster.xml#ServerCluster_' in cluster_creation_result.stdout_lines[-1]"
+
+    - name: Save the WebSphere configuration
+      ansible.builtin.command:
+        cmd: "{{ was_path }}/profiles/{{ dmgr_profile }}/bin/wsadmin.sh -lang jython -conntype SOAP -c 'AdminConfig.save()'"
+      changed_when: true
+
+    - name: Perform Node Sync
+      ansible.builtin.command:
+        cmd: "{{ was_path }}/profiles/{{ dmgr_profile }}/bin/wsadmin.sh -conntype SOAP -lang jython -c 'AdminNodeManagement.syncActiveNodes()'"
+      register: sync_node_output
+      changed_when: true
+
+    - name: Node Synced status
+      ansible.builtin.debug:
+        var: sync_node_output.stdout
+      when: sync_node_output is defined
+
+    - name: Restart Deployment Manager
+      tags: restart_dmgr
+      ansible.builtin.include_tasks: restart_dmgr.yml

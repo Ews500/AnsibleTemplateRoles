@@ -1,0 +1,23 @@
+---
+galaxy_info:
+  author: Manbir Singh (@GBMSINGH)
+  description: Create and configure application servers within a WebSphere ND cluster
+  company: Atradius
+
+  license: proprietary
+
+  min_ansible_version: "2.9"
+
+  platforms:
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+
+  galaxy_tags:
+    - websphere
+    - cluster
+    - nd
+    - appserver
+    - nodeagent
+    - automation

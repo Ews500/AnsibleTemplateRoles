@@ -1,0 +1,33 @@
+- name: Check if the profile directory exists
+  tags: check_profile
+  ansible.builtin.stat:
+    path: "{{ profile_dir }}"
+  register: profile_exists
+
+- name: Set profile_exists_flag based on profile existence
+  tags: check_profile
+  ansible.builtin.set_fact:
+    profile_exists_flag: "{{ profile_exists.stat.exists }}"
+
+- name: Create profile if it does not exist
+  tags: create_profile
+  ansible.builtin.include_tasks: create_profile.yml
+  when: not profile_exists_flag
+
+# Run the remaining tasks only if the profile exists or was created
+- name: Configure profile
+  tags: config_profile
+  when: profile_exists_flag
+  block:
+
+    - name: Set Profile Security
+      tags: set_security
+      ansible.builtin.include_tasks: set_security.yml
+
+    - name: Fedrate Node
+      tags: federate_node
+      ansible.builtin.include_tasks: federate_node.yml
+
+    - name: Start Node Agent
+      tags: start_nodeagent
+      ansible.builtin.include_tasks: start_nodeagent.yml

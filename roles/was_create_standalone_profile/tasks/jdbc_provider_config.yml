@@ -1,0 +1,44 @@
+- name: Check if JDBC provider exists
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c "
+    print AdminConfig.list('JDBCProvider')"
+  register: jdbc_provider_check
+  changed_when: false
+  failed_when: jdbc_provider_check.rc != 0
+
+- name: Set JDBC driver path as WebSphere variable
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c "
+    AdminConfig.create('VariableSubstitutionEntry',
+    '(cells/{{ env_vars.cell_name }}/nodes/{{ node_name }}/servers/{{ env_vars.server_name }}|variables.xml#VariableMap_1)',
+    '[[symbolicName \"{{ jdbc_provider.was_var_name }}\"] [description \"{{ jdbc_provider.was_var_desc }}\"] [value \"{{ jdbc_provider.native_path }}\"]]')"
+  changed_when: was_var_creation.rc == 0
+  register: was_var_creation
+
+- name: Save the WebSphere configuration
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c 'AdminConfig.save()'"
+  when: was_var_creation is defined
+  changed_when: true
+
+- name: Create JDBC provider
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c "
+    AdminTask.createJDBCProvider('[-scope Server={{ env_vars.server_name }} -databaseType {{ jdbc_provider.db_type }}
+    -providerType \"{{ jdbc_provider.provider_type }}\" -implementationType \"{{ jdbc_provider.impl_type }}\"
+    -name \"{{ jdbc_provider.name }}\" -implementationClassName \"{{ jdbc_provider.impl_class_name }}\"
+    -classpath \"{{ jdbc_provider.classpath }}\" -nativePath \"{{ jdbc_provider.native_path }}\"]')"
+  when: not jdbc_provider.name in jdbc_provider_check.stdout
+  changed_when: true
+
+- name: Save JDBC Provider
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP  -c 'AdminConfig.save()'"
+  changed_when: true
+
+- name: Get JDBC Provider ID
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -lang jython -c "
+    print AdminConfig.getid('/Server:{{ env_vars.server_name }}/JDBCProvider:{{ jdbc_provider.name }}/')"
+  register: jdbc_provider_id
+  changed_when: false

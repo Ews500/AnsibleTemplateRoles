@@ -1,0 +1,36 @@
+- name: Identify if the current host is a clustered IHS server
+  ansible.builtin.set_fact:
+    is_clustered_ihs: "{{ inventory_hostname is match('.*ihs10[1-9]app') }}"
+
+- name: Print whether the host is a clustered IHS server
+  ansible.builtin.debug:
+    msg: "This is a clustered IHS server: {{ inventory_hostname }}"
+  when: is_clustered_ihs
+
+- name: Set service names
+  ansible.builtin.set_fact:
+    admin_service_name: "was_ihs_admin.service"
+    ihs_service_name: "was_ihs.service"
+
+# Gather service facts
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+# Stop Web Server Admin Service (only on clustered IHS servers)
+- name: Stop the Web Server Admin Service (clustered IHS only)
+  ansible.builtin.systemd:
+    name: "{{ admin_service_name }}"
+    state: stopped
+  when:
+    - is_clustered_ihs
+    - admin_service_name in ansible_facts.services
+    - ansible_facts.services[admin_service_name].state == "running"
+
+# Stop Web Server Service (runs on all IHS servers)
+- name: Stop the Web Server Service (all IHS servers)
+  ansible.builtin.systemd:
+    name: "{{ ihs_service_name }}"
+    state: stopped
+  when:
+    - ihs_service_name in ansible_facts.services
+    - ansible_facts.services[ihs_service_name].state == "running"

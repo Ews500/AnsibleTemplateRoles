@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE application PUBLIC
+        "-//Sun Microsystems, Inc.//DTD J2EE Application 1.3//EN"
+        "http://java.sun.com/dtd/application_1_3.dtd">
+<application>
+  <display-name>BIP_DnB</display-name>
+  <description>ATRADIUS BIP DNB Advance Web Service</description>
+  <module>
+    <web>
+      <web-uri>{{ app_vars.war_name }}</web-uri>
+      <context-root>{{ env_vars.app_context }}</context-root>
+    </web>
+  </module>
+</application>

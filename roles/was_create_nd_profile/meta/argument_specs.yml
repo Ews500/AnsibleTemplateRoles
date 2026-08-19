@@ -1,0 +1,25 @@
+# roles/was_create_nd_profile/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/was_create_nd_profile/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the was_create_nd_profile role
+    description:
+      - This is the main entrypoint for the C(was_create_nd_profile) role.
+      - Creates a WebSphere Application Server ND profile using manageprofiles command.
+      - Configures security, federates the node, and starts the node agent.
+      - Sets up admin credentials from vault for secure access.
+    version_added: 1.0.0
+    author:
+      - Manbir Singh (@GBMSINGH)
+    options:
+      app:
+        type: "str"
+        description:
+          - "Application name to create the profile for"
+          - "Check application names in environments/<env_code>/hosts files"
+      env_code:
+        type: "str"
+        required: true
+        description:
+          - "Environment code for vault and configuration files"

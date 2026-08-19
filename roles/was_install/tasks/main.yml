@@ -1,0 +1,142 @@
+- name: Select Variable for Installing WebSphere Application Server
+  tags: was_install
+  become: true
+  become_user: "webadmn"
+  vars:
+    target_group_vars: >-
+      {{ nd_vars if target_group in ['nd', 'dmgr'] else standalone_vars }}
+    was_fixpack_q: "([?release=='{{ was_vars.base_release }}'])[0].fixpacks[?state=='active' && id=='{{ was_vars.target_fixpack }}'].version"
+    was_filename_q: "([?release=='{{ was_vars.base_release }}'])[0].fixpacks[?state=='active' && id=='{{ was_vars.target_fixpack }}'].file_name"
+    java_fixpack_q: "([?release=='{{ java_vars.target_release }}'])[0].fixpacks[?state=='active' && id=='{{ java_vars.target_fixpack }}'].version"
+    java_filename_q: "([?release=='{{ java_vars.target_release }}'])[0].fixpacks[?state=='active' && id=='{{ java_vars.target_fixpack }}'].file_name"
+  block:
+    - name: Print target_group_vars variable
+      ansible.builtin.debug:
+        msg: "{{ target_group_vars }}"
+
+    - name: Print WAS and Java variables
+      ansible.builtin.debug:
+        msg: "was_fixpack_q: {{ was_fixpack_q }}, was_filename_q: {{ was_filename_q }}, java_fixpack_q: {{ java_fixpack_q }}, java_filename_q: {{ java_filename_q }}" # noqa yaml[line-length]
+
+    - name: Is IIM installed?
+      ansible.builtin.command:
+        cmd: egrep {{ iim_product_id }} {{ iim_data_location }}/installed.xml
+      register: iim_already_installed
+      changed_when: false
+      failed_when: iim_already_installed.rc != 0
+
+    - name: Is WAS already installed?
+      ansible.builtin.command:
+        cmd: egrep {{ target_group_vars.was_offering_id }} {{ iim_data_location }}/installed.xml
+      register: was_already_installed
+      changed_when: false
+      failed_when: false # Don't fail if WAS is not installed
+
+    - name: Is Fixpack version already installed?
+      ansible.builtin.shell:
+        cmd: "set -o pipefail && {{ target_group_vars.was_path }}/bin/versionInfo.sh | grep '{{ was_releases | json_query(was_fixpack_q) | join(' ') }}'"
+      when: was_already_installed.rc == 0 # WAS product is installed
+      register: fixpack_already_installed
+      changed_when: false
+      failed_when: false # Don't fail if WAS is not patched
+
+    - name: Set filename and version facts
+      ansible.builtin.set_fact:
+        was_filename: "{{ target_group_vars.was_files.file_name if was_already_installed.rc != 0 else (was_releases | json_query(was_filename_q)) | join(' ') }}" # noqa yaml[line-length]
+        java_filename: "{{ java_vars.file_name if was_already_installed.rc != 0 else (java_releases | json_query(java_filename_q)) | join(' ') }}"
+        was_version: "{{ was_vars.base_version if was_already_installed.rc != 0 else (was_releases | json_query(was_fixpack_q)) | join(' ') }}"
+        java_version: "{{ java_vars.base_version if was_already_installed.rc != 0 else (java_releases | json_query(java_fixpack_q)) | join(' ') }}"
+        was_bin_dir: "{{ binary_dirs.was if was_already_installed.rc != 0 else binary_dirs.was_fixpacks }}"
+        java_bin_dir: "{{ binary_dirs.java_sdk if was_already_installed.rc != 0 else binary_dirs.java_sdk_fixpacks }}"
+
+    # --------------------------------------------------------
+    # BLOCK: Standalone Server Tasks
+    # --------------------------------------------------------
+    - name: Standalone WAS Installation
+      tags: install_was_standalone
+      when: target_group == "standalone"
+      block:
+        - name: Stop All JVMs for Standalone VM
+          tags: stop_jvms
+          ansible.builtin.include_tasks: stop_jvm_services.yml
+          when: (was_already_installed.rc == 0 and fixpack_already_installed is defined and fixpack_already_installed.rc != 0)
+          # (WAS installed and fixpack NOT installed)
+
+        - name: Install WebSphere Application Server
+          tags: install_was_standalone_binary_or_fixpack
+          ansible.builtin.include_tasks: install_was.yml
+          when: (was_already_installed.rc != 0) or (was_already_installed.rc == 0 and fixpack_already_installed is defined and fixpack_already_installed.rc != 0) # noqa yaml[line-length]
+          # (WAS NOT installed) or (WAS installed and fixpack NOT installed)
+
+        - name: Start All JVMs for Standalone VM
+          tags: start_jvms
+          ansible.builtin.include_tasks: start_jvm_services.yml
+          when: (was_already_installed.rc == 0 and fixpack_already_installed is defined and fixpack_already_installed.rc != 0)
+          # (WAS installed and fixpack NOT installed)
+
+    # --------------------------------------------------------
+    # BLOCK: Network Deployment (ND) Tasks
+    # --------------------------------------------------------
+    - name: ND Installation
+      tags: install_nd
+      when: target_group == "nd"
+      block:
+        - name: Set DMGR host
+          ansible.builtin.set_fact:
+            dmgr_host: "{{ target_group_vars.dmgr_host }}"
+
+        - name: Stop Clusters Members on Node
+          tags: stop_cluster_members
+          ansible.builtin.include_tasks: stop_cluster_members.yml
+          when: >
+            (was_already_installed.rc | default(1) == 0) and
+            (fixpack_already_installed is defined) and
+            (fixpack_already_installed.rc | default(0) != 0)
+          # (WAS installed and fixpack NOT installed)
+
+        - name: Stop Node Agent service
+          tags: stop_nodeagent
+          ansible.builtin.include_tasks: stop_nodeagent.yml
+          when: (was_already_installed.rc == 0 and fixpack_already_installed is defined and fixpack_already_installed.rc != 0)
+          # (WAS installed and fixpack NOT installed)
+
+        - name: Install WebSphere Application Server ND
+          tags: install_was_nd_node_binary_or_fixpack
+          ansible.builtin.include_tasks: install_was.yml
+          when: (was_already_installed.rc != 0) or (was_already_installed.rc == 0 and fixpack_already_installed is defined and fixpack_already_installed.rc != 0) # noqa yaml[line-length]
+          # (WAS NOT installed) or (WAS installed and fixpack NOT installed)
+
+        - name: Start Node Agent Service
+          tags: start_nodeagent
+          ansible.builtin.include_tasks: start_nodeagent.yml
+          when: (was_already_installed.rc == 0 and fixpack_already_installed is defined and fixpack_already_installed.rc != 0)
+          # (WAS installed and fixpack NOT installed)
+
+    # --------------------------------------------------------
+    # BLOCK: Network Deployment (DMGR) Tasks
+    # --------------------------------------------------------
+    - name: DMGR Installation
+      tags: install_dmgr
+      when: target_group == "dmgr"
+      block:
+        - name: Set DMGR host
+          ansible.builtin.set_fact:
+            dmgr_host: "{{ inventory_hostname_short }}"
+
+        - name: Stop Deployment Manager if Running
+          tags: stop_dmgr
+          ansible.builtin.include_tasks: stop_dmgr.yml
+          when: (was_already_installed.rc == 0 and fixpack_already_installed is defined and fixpack_already_installed.rc != 0)
+          # (WAS installed and fixpack NOT installed)
+
+        - name: Install WebSphere Application Server ND for DMGR
+          tags: install_was_nd_dmgr_binary_or_fixpack
+          ansible.builtin.include_tasks: install_was.yml
+          when: (was_already_installed.rc != 0) or (was_already_installed.rc == 0 and fixpack_already_installed is defined and fixpack_already_installed.rc != 0) # noqa yaml[line-length]
+          # (WAS NOT installed) or (WAS installed and fixpack NOT installed)
+
+        - name: Start Deployment Manager if Running
+          tags: start_dmgr
+          ansible.builtin.include_tasks: start_dmgr.yml
+          when: (was_already_installed.rc == 0 and fixpack_already_installed is defined and fixpack_already_installed.rc != 0)
+          # (WAS installed and fixpack NOT installed)

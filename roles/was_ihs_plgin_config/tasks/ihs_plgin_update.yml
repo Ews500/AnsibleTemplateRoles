@@ -1,0 +1,163 @@
+# ================================================
+# 1. Retrieve WebSphere Node Name and Generate Unique Identifiers
+# ================================================
+- name: Retrieve WebSphere Profile Node name
+  become: true
+  become_user: "webadmn"
+  ansible.builtin.command: >
+    {{ appsrvr_vars.wsadmin_path }}/wsadmin.sh -lang jython -conntype SOAP -c "
+    serverID = AdminControl.completeObjectName('WebSphere:type=Server,*');
+    print AdminControl.getAttribute(serverID, 'nodeName')"
+  register: node_name_output
+  changed_when: false
+  failed_when: node_name_output.rc != 0
+
+- name: Set fact for extracted node name
+  ansible.builtin.set_fact:
+    node_name: "{{ node_name_output.stdout_lines[-1] }}"
+
+- name: Debug Node Name
+  ansible.builtin.debug:
+    msg: "Node name is {{ node_name }}"
+
+- name: Extract numeric part from Application Server
+  ansible.builtin.set_fact:
+    appsrvr_num: "{{ ansible_hostname | regex_search('[0-9]+') }}"
+
+- name: Debug numeric part
+  ansible.builtin.debug:
+    msg: "appsrvr_num is {{ appsrvr_num }}"
+
+- name: Generate unique identifier
+  ansible.builtin.set_fact:
+    unique_id: "{{ ansible_date_time.epoch }}_{{ 1000 | random }}"
+
+- name: Generate unique cluster name
+  ansible.builtin.set_fact:
+    unique_cluster_name: "server1_{{ node_name }}_{{ env_vars.app_name }}_Cluster"
+
+- name: Generate unique VirtualHostGroup name
+  ansible.builtin.set_fact:
+    unique_virtual_host_group_name: "default_host_{{ appsrvr_num }}_{{ node_name }}_{{ unique_id }}"
+
+- name: Generate unique UriGroup name
+  ansible.builtin.set_fact:
+    unique_uri_group_name: "default_host_{{ appsrvr_num }}_server1_{{ node_name }}_Cluster_URIs_{{ unique_id }}"
+
+- name: Debug Unique Names
+  ansible.builtin.debug:
+    msg: |
+      Unique cluster name: {{ unique_cluster_name }}
+      VirtualHostGroup: {{ unique_virtual_host_group_name }}
+      UriGroup: {{ unique_uri_group_name }}
+
+# ===============================================================
+# 2. Select Primary and Secondary Standalone IHS Hosts Dynamically
+# ================================================================
+
+- name: Filter standalone IHS hosts based on environment
+  ansible.builtin.set_fact:
+    standalone_ihs_hosts: >-
+      {{
+        groups['ihs'] |
+        select('match', ihs_pattern_map[env_code]) |
+        list |
+        sort
+      }}
+  vars:
+    ihs_pattern_map:
+      FATW: '^ltwas00[1-2].*'
+      FATF: '^ltwas00[1-2].*'
+      BAT: '^ltwas00[1-2].*'
+      PROD: '^lpwas00[1-2].*'
+
+- name: Set primary and secondary IHS hosts
+  ansible.builtin.set_fact:
+    primary_ihs_host: "{{ standalone_ihs_hosts[0] }}"
+    secondary_ihs_host: "{{ standalone_ihs_hosts[1] }}"
+
+- name: Debug primary and secondary IHS hosts
+  ansible.builtin.debug:
+    msg: |
+      Primary IHS host is {{ primary_ihs_host }}
+      Secondary IHS host is {{ secondary_ihs_host }}
+
+# ================================================
+# 3. Configure IHS Plugin on Primary IHS Host
+# ================================================
+- name: Configure IHS Plugin on Primary IHS Host
+  tags: config_ihs_plugin_primary_ihs_server
+  delegate_to: "{{ primary_ihs_host }}"
+  run_once: true
+  block:
+    - name: Copy Plugin Template file
+      ansible.builtin.template:
+        src: "{{ tpl_file }}"
+        dest: "{{ ihs_plg_config }}/{{ rsp_file }}"
+        mode: "0644"
+
+    - name: Fetch Plugin template file contents
+      ansible.builtin.slurp:
+        src: "{{ ihs_plg_config }}/{{ rsp_file }}"
+      register: template_plg_file_output
+
+    - name: Configure Newly Created Profile with Web Server
+      tags: pri_ihs_plgin_config
+      ansible.builtin.blockinfile:
+        path: "{{ ihs_plg_config }}/plugin-cfg.xml"
+        backup: true
+        marker: "<!-- {mark} Plugin Details for Deployed App {{ env_vars.app_name }} -->"
+        insertbefore: '^</Config>'
+        block: "{{ template_plg_file_output.content | b64decode }}"
+
+    - name: Clean up temporary plugin template file
+      tags: cleanup_rsp_file
+      ansible.builtin.file:
+        path: "{{ ihs_plg_config }}/{{ rsp_file }}"
+        state: absent
+
+- name: Restart Primary Web Server
+  tags: restart_pri_ihs
+  delegate_to: "{{ primary_ihs_host }}"
+  run_once: true
+  block:
+    - name: Stop WebServer Services
+      tags: stop_ihs
+      ansible.builtin.include_tasks: stop_ihs_services.yml
+
+    - name: Start WebServer Services
+      tags: start_ihs
+      ansible.builtin.include_tasks: start_ihs_services.yml
+# ========================================================
+# 4. Copy plugin-cfg.xml from primary to secondary IHS
+# ========================================================
+- name: Fetch plugin-cfg.xml from primary to control node
+  tags: fetch_pri_plg_ihs
+  ansible.builtin.fetch:
+    src: "{{ ihs_plg_config }}/plugin-cfg.xml"
+    dest: "/tmp/{{ secondary_ihs_host }}-plugin-cfg.xml"
+    flat: true
+  delegate_to: "{{ primary_ihs_host }}"
+  when: secondary_ihs_host is defined
+
+- name: Copy plugin-cfg.xml from control node to secondary IHS
+  tags: copy_pri_plg_ihs
+  ansible.builtin.copy:
+    src: "/tmp/{{ secondary_ihs_host }}-plugin-cfg.xml"
+    dest: "{{ ihs_plg_config }}/plugin-cfg.xml"
+    mode: "0644"
+  delegate_to: "{{ secondary_ihs_host }}"
+  when: secondary_ihs_host is defined
+
+- name: Restart Secondary Web Server
+  tags: restart_sec_ihs
+  delegate_to: "{{ secondary_ihs_host }}"
+  when: secondary_ihs_host is defined
+  block:
+    - name: Stop WebServer Services
+      tags: stop_ihs
+      ansible.builtin.include_tasks: stop_ihs_services.yml
+
+    - name: Start WebServer Services
+      tags: start_ihs
+      ansible.builtin.include_tasks: start_ihs_services.yml

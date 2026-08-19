@@ -1,0 +1,16 @@
+- name: Edit password for JAASAuthData
+  no_log: true # To avoid printing user/pw in output
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP
+    -c "AdminTask.modifyAuthDataEntry('[-alias {{ node_name }}/{{ jdbc_datasource.alias }}
+    -user {{ jdbc_datasource.user }} -password {{ jdbc_datasource.password }}]')"
+  register: jaas_auth_edition
+  changed_when: jaas_auth_edition.rc == 0
+  failed_when: jaas_auth_edition.rc != 0 and 'Password is not changed' in jaas_auth_edition.stdout
+
+- name: Save the WebSphere configuration
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c 'AdminConfig.save()'"
+  when: jaas_auth_edition is defined
+  changed_when: true
+  register: save_output

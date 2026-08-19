@@ -1,0 +1,11 @@
+- name: Uninstall application
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c \"AdminApp.uninstall('{{ app_uninstall }}')\""
+  failed_when: false
+  changed_when: uninstall_output.rc == 0
+  register: uninstall_output
+  # DON'T fail with this WAS error. WASX7280E: Anapplication with name "xxxxx" does not exist.
+
+- name: Debug uninstall output
+  ansible.builtin.debug:
+    msg: "Uninstall Output: {{ uninstall_output }}"

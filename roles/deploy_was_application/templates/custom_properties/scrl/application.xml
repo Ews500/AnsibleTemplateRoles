@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE application PUBLIC "-//Sun Microsystems, Inc.//DTD J2EE Application 1.3//EN" "http://java.sun.com/dtd/application_1_3.dtd">
+
+   <application id="Application_ID">
+      <display-name>bip-coface-france-ear</display-name>
+      <description>ATRADIUS BIP Coface France EAR</description>
+      <module id="WebModule_{{ env_vars.web_module }}">
+         <web>
+            <web-uri>{{ app_vars.war_name }}</web-uri>
+            <context-root>{{ env_vars.app_context }}</context-root>
+         </web>
+      </module>
+      <module id="EjbModule_{{ env_vars.ejb_module1 }}">
+         <ejb>bip-common-ejb-1.1-SNAPSHOT.jar</ejb>
+      </module>
+      <module id="EjbModule_{{ env_vars.ejb_module2 }}">
+         <ejb>bip-coface-france-ejb-1.1-SNAPSHOT.jar</ejb>
+      </module>
+   </application>

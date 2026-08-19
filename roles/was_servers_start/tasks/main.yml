@@ -1,0 +1,12 @@
+- name: Start WebSphere Application Server
+  ansible.builtin.command: "{{ profiles_dir }}/{{ item }}/bin/startServer.sh server1"
+  loop: "{{ profile_names[target_vm] }}"
+  loop_control:
+    loop_var: item
+  register: serverstatus_output
+  failed_when: "'Server server1 is already started' not in serverstatus_output.stdout and serverstatus_output.rc != 0"
+  changed_when: "'Server server1 is open for e-business' in serverstatus_output.stdout"
+
+- name: Show updated Server Status
+  ansible.builtin.debug:
+    msg: "Server start output: {{ serverstatus_output.stdout }}"

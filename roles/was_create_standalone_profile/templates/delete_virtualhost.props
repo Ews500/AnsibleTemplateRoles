@@ -1,0 +1,19 @@
+#
+# Header
+#
+ResourceType=VirtualHost
+ImplementingResourceType=VirtualHost
+ResourceId=Cell=!{cellName}:VirtualHost={{ virtual_host.name }}
+DELETE=true # To delete an entire virtual host object, uncomment this line and run the deleteConfigProperties command.
+#
+
+#
+# Properties
+#
+name={{ virtual_host.name }} # required
+#
+
+EnvironmentVariablesSection
+
+# Environment Variables
+cellName={{ env_vars.cell_name }}

@@ -1,0 +1,67 @@
+---
+
+required_dirs:
+  - name: "/app"
+    permissions: "0750"
+  - name: "/opt/eteam"
+    permissions: "0755"
+
+supplementary_rpms:
+  - distribution: "RedHat"
+    major_version: "8"
+    packages_list:
+      # Preparing Red Hat Enterprise Linux 8 for installation - YUM
+      # https://www.ibm.com/docs/en/was/9.0.5?topic=installation-preparing-red-hat-enterprise-linux-8
+      - gtk2
+      - libXtst
+      - psmisc
+      - libnsl
+      # Other packages
+      - wget
+      - motif
+      - motif-devel
+      - redhat-lsb
+      - redhat-lsb-core
+      - unzip
+      - rsync
+      - lsof
+      - openssl
+      - ksh
+      - sysstat
+      - libaio
+      - python3-lxml
+  - distribution: "RedHat"
+    major_version: "9"
+    packages_list:
+      # Preparing Red Hat Enterprise Linux 9 for installation - DNF
+      # https://www.ibm.com/docs/en/was/9.0.5?topic=installation-preparing-red-hat-enterprise-linux-9
+      - gtk2
+      - libXtst
+      - psmisc
+      - libnsl
+      - chkconfig
+      - libxcrypt-compat
+      # Other packages
+      - wget
+      - motif
+      - motif-devel
+      - redhat-lsb
+      - redhat-lsb-core
+      - unzip
+      - rsync
+      - lsof
+      - openssl
+      - ksh
+      - sysstat
+      - libaio
+      - python3-lxml
+
+ulimits:
+  - {domain: 'webadmn', limit: 'nofile', type: soft, value: 'unlimited'}
+  - {domain: 'webadmn', limit: 'nofile', type: hard, value: 'unlimited'}
+  - {domain: 'webadmn', limit: 'nproc', type: soft, value: 'unlimited'}
+  - {domain: 'webadmn', limit: 'nproc', type: hard, value: 'unlimited'}
+  - {domain: 'webadmn', limit: 'core', type: soft, value: 'unlimited'}
+  - {domain: 'webadmn', limit: 'core', type: hard, value: 'unlimited'}
+  - {domain: 'webadmn', limit: 'fsize', type: soft, value: 'unlimited'}
+  - {domain: 'webadmn', limit: 'fsize', type: hard, value: 'unlimited'}

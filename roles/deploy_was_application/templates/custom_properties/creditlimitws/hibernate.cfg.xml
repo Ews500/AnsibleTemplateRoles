@@ -1,0 +1,65 @@
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://hibernate.sourceforge.net/hibernate-configuration-3.0.dtd">
+
+<hibernate-configuration>
+    <session-factory>
+        <property name="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</property>
+		<property name="hibernate.connection.datasource">{{ env_vars.jdbc_datasource_list | json_query('[?db_name==`%s`].jndi_name' | format(vault[app].sym_db_name)) | join(" ") }}</property>
+        <property name="hibernate.connection.driver_class">oracle.jdbc.driver.OracleDriver</property>
+  		<property name="hibernate.jndi.url">iiop://localhost:{{ env_vars.was_bootstrap_port }}</property>
+    	<property name="hibernate.jndi.class">com.ibm.websphere.naming.WsnInitialContextFactory</property>
+
+        <property name="hibernate.format_sql">true</property>
+        <property name="hibernate.proxool.pool_alias">pool1</property>
+        <property name="hibernate.connection.pool_size">1</property>
+        <property name="hibernate.cache.use_query_cache">false</property>
+        <property name="hibernate.cache.region_prefix">hibernate.cld</property>
+        <property name="hibernate.jdbc.use_streams_for_binary">true</property>
+        <property name="hibernate.jdbc.batch_size">0</property>
+        <property name="hibernate.max_fetch_depth">3</property>
+        <property name="hibernate.show_sql">false</property>
+        <property name="hibernate.use_sql_comments">true</property>
+        <property name="hibernate.default_batch_fetch_size">100</property>
+        <property name="hibernate.order_updates">true</property>
+        <property name="hibernate.jdbc.batch_versioned_data">true</property>
+        <!--<property name="hibernate.hbm2ddl.auto">update</property> POSSIBLE: create-drop, create, update-->  
+        <property name="hibernate.generate_statistics">false</property>
+        <!-- <property name="hibernate.cache.provider_class">org.hibernate.cache.NoCacheProvider</property> -->
+	    <property name="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory</property>
+        
+        <!-- Mapping annotated classes and resources -->
+        <mapping class="com.atradius.webservice.creditlimit.domain.AUAResultDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.AUAResultPKDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.CG_RefCodesDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.CG_RefCodesPKDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.ChargesDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.CommitmentCategoryDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.ConditionMChoiceTypeDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.ConditionMChoiceTypePKDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.ConditionTypeDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.ConditionVariableDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.ConditionVariableTypeDOM"/>
+       	<mapping class="com.atradius.webservice.creditlimit.domain.ConditionVariableTypePKDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.CountryDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.CreditAdviceDetailDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.CreditAdviceDetailPKDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.CreditAdvicePartnerDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.CreditAdvicePartnerPKDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.CreditLimitDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.KFU_DecisionDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.KFUDecisionReasonReferenceDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.KFUDecisionReasonRefPKDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.MChoiceVarTypesDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.MChoiceVarTypesPKDOM"/>
+        <mapping class="com.atradius.webservice.creditlimit.domain.PolicyDOM"/>
+	    <mapping class="com.atradius.webservice.creditlimit.domain.TransTransfDetailsDOM"/>
+	    <mapping class="com.atradius.webservice.creditlimit.domain.LanguageDOM"/>
+        <!-- Added for FreeText Editor CRN [START] -->
+        <mapping class="com.atradius.webservice.creditlimit.domain.ConditionVariableUniDOM"/>
+        <!-- Added for FreeText Editor CRN [END] -->
+
+
+        <!--<event type="pre-insert"/>-->
+    </session-factory>
+</hibernate-configuration>

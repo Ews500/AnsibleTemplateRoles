@@ -1,0 +1,25 @@
+- name: Update Data Source with newly created JAAS-J2c for Datasource
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  block:
+
+    - name: Create Jython script dynamically
+      ansible.builtin.template:
+        src: "assign_j2c.jython.j2"
+        dest: "{{ temp_script }}"
+        mode: '0644'
+
+    - name: Execute wsadmin script
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -f {{ temp_script }}
+      register: wsadmin_output
+      changed_when: true
+
+    - name: Show wsadmin output
+      ansible.builtin.debug:
+        var: wsadmin_output.stdout
+
+    - name: Remove temporary script
+      ansible.builtin.file:
+        path: "{{ temp_script }}"
+        state: absent

@@ -1,0 +1,39 @@
+---
+
+batch_vars:
+  genericbip-be:
+    - monitoringBatchGraydonBelgium
+    - queueReaderGraydonBelgium
+  genericbip-de:
+    - monitoringNoticesEVC
+    - queueNoticesEVC
+    - monitoringBatchEVC
+    - queueReaderEVC
+  genericbip-dnba:
+    - monitoringBatchDBGlobal
+    - monitoringBatchCAN
+    - processRegListsCAN
+    - monitoringBatchListCAN
+    - monitoringBatchCHE
+    - processRegListsCHE
+    - monitoringBatchListCHE
+    - monitoringBatchUSA
+    - processRegListsUSA
+    - monitoringBatchListUSA
+    - monitoringBatchAUS
+    - processRegListsAUS
+    - monitoringBatchListAUS
+  genericbip-eea:
+    - monitoringNoticesCoface
+    - monitoringBatchCoface
+  genericbip-gra:
+    - monitoringBatchGraydonBE
+    - monitoringBatchGraydonUK
+    - monitoringBatchGraydonNL
+  genericbip-ie:
+    - monitoringBatchExperianIRL
+    - queueReaderExperianIRL
+  genericbip-it:
+    - processRptNoticeCerved
+    - fetchRptNoticeCerved
+    - processDelayedRptCerved

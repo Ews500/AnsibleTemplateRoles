@@ -1,0 +1,28 @@
+# roles/ibm_linux/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/ibm_linux/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the ibm_linux role
+    description:
+      - This is the main entrypoint for the C(ibm_linux) role.
+      - Prepares Linux systems for IBM software installation.
+      - Creates webadmn user and group for WebSphere administration.
+      - Installs required packages and configures system settings.
+      - Loads host-specific variables for targeted configuration.
+    version_added: 1.0.0
+    author:
+      - Daniel Benitez (@ESDBEN2)
+    options:
+      webadmn_user:
+        type: "str"
+        required: true
+        description:
+          - "Username for WebSphere administrator"
+          - "Typically 'webadmn'"
+      webadmn_group:
+        type: "str"
+        required: true
+        description:
+          - "Group name for WebSphere administrator"
+          - "Typically 'webadmn'"

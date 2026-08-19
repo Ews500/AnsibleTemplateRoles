@@ -1,0 +1,36 @@
+---
+- name: Get Mail Provider ID
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP
+    -username {{ vault.admin_username }} -password {{ vault.admin_password }} -host {{ ansible_hostname }} -port {{ env_vars.was_soap_port }} -c "
+    print AdminConfig.getid('/Server:{{ env_vars.server_name }}/MailProvider:Built-in Mail Provider/')"
+  register: mail_provider_output
+  changed_when: false
+
+- name: Set fact for extracted Mail Provider ID
+  ansible.builtin.set_fact:
+    mail_provider_id: "{{ mail_provider_output.stdout | regex_replace('(?s).*?(Built-in Mail Provider\\(.*\\))', '\\1') | regex_replace('\"$', '') | trim }}" # noqa yaml[line-length]
+
+- name: Create Mail Session # noqa yaml[line-length]
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP
+    -username {{ vault.admin_username }} -password {{ vault.admin_password }} -host {{ ansible_hostname }} -port {{ env_vars.was_soap_port }} -c "
+    mailHost = '{{ env_vars.mail_session.mail_host }}';
+    name = ['name', '{{ env_vars.mail_session.name }}'];
+    jndi = ['jndiName', '{{ env_vars.mail_session.jndi_name }}'];
+    mailRelay = ['mailTransportHost', mailHost];
+    mailTransportProtocol =
+    ['mailTransportProtocol', '(cells/{{ env_vars.cell_name }}/nodes/{{ node_name }}/servers/{{ env_vars.server_name }}|resources.xml#builtin_smtp)'];
+    mailStoreProtocol = ['mailStoreProtocol',
+    '(cells/{{ env_vars.cell_name }}/nodes/{{ node_name }}/servers/{{ env_vars.server_name }}|resources.xml#builtin_imaps)'];
+    msAttrs = [name, jndi, mailRelay, mailTransportProtocol, mailStoreProtocol];
+    print AdminConfig.create('MailSession', '{{ mail_provider_id }}', msAttrs)"
+  register: mailsession_creation
+  changed_when: mailsession_creation.rc == 0
+  failed_when: mailsession_creation.rc != 0 and 'ADMG0037E' not in mailsession_creation.stdout
+
+- name: Save the WebSphere configuration
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c 'AdminConfig.save()'"
+  when: mailsession_creation is defined and mailsession_creation.rc == 0
+  changed_when: true

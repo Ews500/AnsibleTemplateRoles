@@ -1,0 +1,89 @@
+# Restart DMGR
+
+- name: Set service_name
+  tags: always
+  ansible.builtin.set_fact:
+    service_name: "{{ dmgr_service }}.service"
+
+- name: Stop Deployment Manager
+  tags: stop_dmgr
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  block:
+
+    # Stop DMGR
+
+    - name: Check service status
+      ansible.builtin.service_facts:
+
+    - name: Output service status
+      ansible.builtin.debug:
+        var: ansible_facts.services[service_name]
+
+    - name: Verify if pid file exists and process is running
+      ansible.builtin.shell: "test -f {{ dmgr_profile_dir }}/logs/dmgr/dmgr.pid && ps -p $(cat {{ dmgr_profile_dir }}/logs/dmgr/dmgr.pid) > /dev/null"
+      register: dmgr_is_running
+      ignore_errors: true
+      changed_when: false
+      failed_when: false
+
+    - name: Print process ID
+      ansible.builtin.debug:
+        var: dmgr_is_running.stdout_lines
+      when: dmgr_is_running.stdout_lines | length > 0
+
+    - name: Stop DMGR if service is not running and process is running  # noqa no-changed-when
+      become: true
+      ansible.builtin.command:
+        cmd: "{{ dmgr_profile_dir }}/bin/{{ stop_dmgr }}"
+      when:
+        - ansible_facts.services[service_name].state != "running"
+        - dmgr_is_running.stdout_lines | length > 0
+      async: 30 # wait for up to 30 sec, poll every 10 sec
+      poll: 10
+
+    - name: Stop service if service is running
+      become: true
+      become_user: root
+      ansible.builtin.systemd:
+        name: "{{ service_name }}"
+        state: stopped
+      when: ansible_facts.services[service_name].state == "running"
+      async: 30 # wait for up to 30 sec, poll every 10 sec
+      poll: 10
+
+- name: Start Deployment Manager
+  tags: start_dmgr
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  block:
+
+    # Start DMGR
+
+    - name: Check service status
+      ansible.builtin.service_facts:
+
+    - name: Output service status
+      ansible.builtin.debug:
+        var: ansible_facts.services[service_name]
+      failed_when: ansible_facts.services[service_name].state == "running"
+
+    - name: Verify if pid file exists and process is running
+      ansible.builtin.shell: "test -f {{ dmgr_profile_dir }}/logs/dmgr/dmgr.pid && ps -p $(cat {{ dmgr_profile_dir }}/logs/dmgr/dmgr.pid) > /dev/null"
+      register: dmgr_is_running
+      ignore_errors: true
+      changed_when: false
+
+    - name: Print process ID
+      ansible.builtin.debug:
+        var: dmgr_is_running.stdout_lines
+      when: dmgr_is_running.stdout_lines | length > 0
+
+    - name: Start service
+      become: true
+      become_user: root
+      ansible.builtin.systemd:
+        name: "{{ service_name }}"
+        state: started
+      async: 90 # wait for up to 90 sec, poll every 10 sec
+      poll: 10

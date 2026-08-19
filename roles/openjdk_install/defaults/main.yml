@@ -1,0 +1,8 @@
+---
+
+java_home: /app/openjdk
+java_symlink: "{{ java_home }}/java"
+installables_mount: /nfstemp
+jdk_installables: "{{ installables_mount }}/jdk"
+jdk_installables_bc21: "/software/Oracle_Software/was/jdk"
+java_version: "11.0.24.0.8-2"

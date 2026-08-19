@@ -1,0 +1,25 @@
+# roles/was_create_ndapp_cluster_servers/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/was_create_ndapp_cluster_servers/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the was_create_ndapp_cluster_servers role
+    description:
+      - This is the main entrypoint for the C(was_create_ndapp_cluster_servers) role.
+      - Creates and configures application servers within a WebSphere ND cluster.
+      - Optionally starts the node agent after server creation.
+      - Uses blocks and conditional logic for safe, idempotent operations.
+    version_added: 1.0.0
+    author:
+      - Manbir Singh (@GBMSINGH)
+    options:
+      app:
+        type: "str"
+        description:
+          - "Application name to create the cluster for"
+          - "Check application names in environments/<env_code>/hosts files"
+      env_code:
+        type: "str"
+        required: true
+        description:
+          - "Environment code for vault and configuration files"

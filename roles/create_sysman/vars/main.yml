@@ -1,0 +1,12 @@
+---
+
+was_profile: "{{ was_path | default('/app/WASND') }}/profiles/{{ profile_name }}"
+
+envs_on_host:
+  ltwas10:
+    - bat
+    - fatf
+    - fatw
+  lpwas10:
+    - rels
+    - prod

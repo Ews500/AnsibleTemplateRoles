@@ -1,0 +1,20 @@
+iim_install_location: /app/InstallationManager
+imshared_location: /app/IMShared
+
+ihs_install_location: /app/HTTPServer
+plg_install_location: /app/HTTPPlugins
+wct_install_location: /app/HTTPToolbox
+
+# Base shared directory
+shared_mount: "/nfstemp/was_binaries"
+
+# Define subdirectories for different binary types
+binary_dirs:
+  iim: "{{ shared_mount }}/iim"
+  ihs: "{{ shared_mount }}/ihs"
+  ihs_plugins: "{{ shared_mount }}/ihs_plugins"
+  ihs_wct: "{{ shared_mount }}/ihs_wct"
+  java_sdk: "{{ shared_mount }}/java_sdk"
+  java_sdk_fixpacks: "{{ shared_mount }}/java_sdk_fixpacks"
+  ihs_plug_fixpacks: "{{ shared_mount }}/ihs_plugins_fixpacks"
+  ihs_wct_fixpacks: "{{ shared_mount }}/ihs_wct_fixpacks"

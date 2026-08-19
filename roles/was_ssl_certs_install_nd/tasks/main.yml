@@ -1,0 +1,17 @@
+- name: Install SSL Certificate for ND Cluster Apps JVM
+  tags: node_ssl_install
+  vars:
+    target_group_vars: >-
+      {{ nd_vars if target_group in ['nd'] }}
+  block:
+    - name: Install WebSphere Application Server ND SSL Cert Install
+      tags: install_nd_ssl
+      when: target_group == "nd"
+      block:
+        - name: Set DMGR host
+          ansible.builtin.set_fact:
+            dmgr_host: "{{ target_group_vars.dmgr_host }}"
+
+        - name: Install Atradius SSL Certificate on Deployment Manager
+          tags: install_ssl_dmgr
+          ansible.builtin.include_tasks: install_ssl.yml

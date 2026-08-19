@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+
+<beans>
+
+	<!-- ======================== FILTER CHAIN ======================= -->
+	<bean id="filterChainProxy"
+		class="org.acegisecurity.util.FilterChainProxy">
+		<property name="filterInvocationDefinitionSource">
+			<value>
+				CONVERT_URL_TO_LOWERCASE_BEFORE_COMPARISON
+				PATTERN_TYPE_APACHE_ANT
+				/login.jsp=httpSessionContextIntegrationFilter
+				/logout.jsp=httpSessionContextIntegrationFilter
+				/jobservlet*=httpSessionContextIntegrationFilter
+				/pages/result.jsp=httpSessionContextIntegrationFilter				
+				/pages/login.jsp=httpSessionContextIntegrationFilter
+				/pages/commons/**=httpSessionContextIntegrationFilter
+				/theme/**=httpSessionContextIntegrationFilter
+				/scripts/**=httpSessionContextIntegrationFilter
+				/images/**=httpSessionContextIntegrationFilter
+				/j_acegi_security_checkout=logoutFilter
+				/j_acegi_security_check=httpSessionContextIntegrationFilter,formAuthenticationProcessingFilter
+				/**=httpSessionContextIntegrationFilter,formAuthenticationProcessingFilter,exceptionTranslationFilter,filterSecurityInterceptor
+			</value>
+		</property>
+	</bean>
+
+	<!-- ===================== httpSessionContextIntegrationFilter ==================== -->
+	<bean id="httpSessionContextIntegrationFilter"
+		  class="org.acegisecurity.context.HttpSessionContextIntegrationFilter">
+	</bean>
+	
+	<!-- ===================== exceptionTranslationFilter ==================== -->
+	<bean id="exceptionTranslationFilter"
+		  class="org.acegisecurity.ui.ExceptionTranslationFilter">
+		<property name="authenticationEntryPoint">
+			<ref bean="formLoginAuthenticationEntryPoint" />
+		</property>
+	</bean>
+	
+	<!-- ===================== filterSecurityInterceptor ==================== -->
+	<bean id="filterSecurityInterceptor"
+		  class="org.acegisecurity.intercept.web.FilterSecurityInterceptor">
+		<property name="authenticationManager">
+			<ref bean="authenticationManager" />
+		</property>
+		<property name="accessDecisionManager">
+			<ref bean="accessDecisionManager" />
+		</property>
+		<property name="objectDefinitionSource">
+			<value>
+				CONVERT_URL_TO_LOWERCASE_BEFORE_COMPARISON
+				PATTERN_TYPE_APACHE_ANT
+				/**=ROLE_ADMIN
+			</value>
+		</property>
+	</bean>
+	
+	<!-- ===================== formLoginAuthenticationEntryPoint ==================== -->
+	<bean id="formLoginAuthenticationEntryPoint"
+		  class="org.acegisecurity.ui.webapp.AuthenticationProcessingFilterEntryPoint">
+		<property name="loginFormUrl">
+			<value>/login.jsp</value>
+		</property>
+		<property name="forceHttps">
+			<value>false</value>
+		</property>
+	</bean>
+	
+	<!-- ===================== formAuthenticationProcessingFilter ==================== -->
+	<bean id="formAuthenticationProcessingFilter"
+		class="org.acegisecurity.ui.webapp.AuthenticationProcessingFilter">
+		<property name="authenticationManager">
+			<ref bean="authenticationManager" />
+		</property>
+		<property name="authenticationFailureUrl">
+			<value>/login.jsp?error=true</value>
+		</property>
+		<property name="defaultTargetUrl">
+			<value>/DisplayJobRepository</value>
+		</property>
+		<property name="filterProcessesUrl">
+			<value>/j_acegi_security_check</value>
+		</property>
+	</bean>
+	
+	<!-- ===================== authenticationManager ==================== -->
+	<bean id="authenticationManager"
+		class="org.acegisecurity.providers.ProviderManager">
+		<property name="providers">
+			<list>
+				<ref local="ldapAuthenticationProvider"/>
+			</list>
+		</property>
+	</bean>
+	
+	<!-- ===================== accessDecisionManager ==================== -->
+	<bean id="accessDecisionManager"
+		  class="org.acegisecurity.vote.AffirmativeBased">
+		<property name="decisionVoters">
+			<list>				
+				<ref bean="roleVoter" />
+				<bean class="org.acegisecurity.vote.AuthenticatedVoter"/>
+
+			</list>
+		</property>
+	</bean>
+
+	<bean id="roleVoter" class="org.acegisecurity.vote.RoleVoter">
+		<property name="rolePrefix">
+			<value></value>
+		</property>
+	</bean>
+	
+	
+	<!-- ===================== objectDefinitionSource ==================== -->
+	<bean id="attributes" class="org.acegisecurity.annotation.SecurityAnnotationAttributes"/>
+	<bean id="secureObjectDefinitionSource" class="org.acegisecurity.intercept.method.MethodDefinitionAttributes">
+	  <property name="attributes"><ref local="attributes"/></property>
+	</bean>
+
+	<!-- ================= ldap ===================== -->
+	<bean id="initialDirContextFactory" class="org.acegisecurity.ldap.DefaultInitialDirContextFactory">
+		<constructor-arg value="{{ env_vars.ldap_url }}"/>
+		<property name="managerDn" value="orclapplicationcommonname=atrServNetAuthApp"/>
+		<property name="managerPassword" value="{{ vault[app].cyc_manager_password }}"/>
+	</bean>
+	<bean id="ldapAuthenticationProvider" class="org.acegisecurity.providers.ldap.LdapAuthenticationProvider">
+		<constructor-arg>
+			<bean class="org.acegisecurity.providers.ldap.authenticator.BindAuthenticator">
+				<constructor-arg>
+					<ref local="initialDirContextFactory"/>
+				</constructor-arg>
+				<property name="userDnPatterns">
+					<list>
+						<value>cn={0},cn=internal,cn=Users</value>
+					</list>
+				</property>
+			</bean>
+		</constructor-arg>
+       <constructor-arg>
+           <bean class="com.atradius.acegi.LdapAuthoritiesPopulatorImpl">
+           		<!-- 	<property name="userManager" ref="userManager"/>-->
+           </bean>
+       </constructor-arg>
+
+	</bean>
+
+   <bean id="userSearch" class="org.acegisecurity.ldap.search.FilterBasedLdapUserSearch">
+       <constructor-arg index="0" value=""/>
+       <constructor-arg index="1" value="(cn={0})"/>
+       <constructor-arg index="2" ref="initialDirContextFactory"/>
+       <property name="searchSubtree" value="true"/>
+   </bean>
+
+   <bean id="ldapUserDetailsMapper" class="org.acegisecurity.userdetails.ldap.LdapUserDetailsMapper">
+       <property name="rolePrefix" value=""/>
+   </bean>
+	
+	<!-- anonymous -->
+	    <bean id="anonymousProcessingFilter"
+class="org.acegisecurity.providers.anonymous.AnonymousProcessingFilter">
+        <property name="key" value="anonymous"/>
+        <property name="userAttribute" value="anonymous,ROLE_ANONYMOUS"/>
+    </bean> 
+    
+        <bean id="anonymousAuthenticationProvider"
+class="org.acegisecurity.providers.anonymous.AnonymousAuthenticationProvider">
+        <property name="key" value="anonymous"/>
+    </bean>      
+    
+</beans>

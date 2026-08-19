@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<!-- This is the database against which the framework authenticates against. 
+		If no value is specified, then default datasource is used. The default 
+		datasource is specified in db_config.xml-->
+	<authentication-datasource>{{ env_vars.jdbc_datasource_list | json_query('[?db_name==`%s`].db_name' | format(vault[app].sym_db_name)) | join(" ") }}</authentication-datasource>
+	<authorisation>
+		<datasource>{{ env_vars.jdbc_datasource_list | json_query('[?db_name==`%s`].db_name' | format(vault[app].sym_db_name)) | join(" ") }}</datasource>
+		<privilege></privilege>
+		<form>B2BAUTH</form>
+		<item>B2BAUTH</item>
+		<itemID>-1</itemID>
+	</authorisation>
+	<presentation_layer_error_category>WebServiceException</presentation_layer_error_category>
+	<presentation_layer_default_error_code>WS03</presentation_layer_default_error_code>	
+	<error-message-cache>
+	    <error-message-loader>
+			<loader-class>com.atradius.ws.util.exception.messages.core.XMLErrorMessageLoader</loader-class>
+			<load-on-startup>yes</load-on-startup>
+		</error-message-loader>
+	</error-message-cache>
+	<error-management>
+		<show-internal-error>no</show-internal-error>
+		<hide-stacktrace>yes</hide-stacktrace>
+	</error-management>
+	<logging>
+		<show-request-message>yes</show-request-message>
+		<show-response-message>yes</show-response-message>
+	</logging>
+	<!-- Add configuration pertaining to the application here -->
+	<service name="AtradiusOrganisationService">
+		<!-- Relative path to the wsdl folder. The WSDL folder is placed
+			under : 
+			- WebContentName/<wsdl-path>/ for a web-app.
+			The value of this element should be relative to the <Service-Name> folder. -->
+		<wsdl-path>WSDL</wsdl-path>
+		<message-validation>			
+			<!-- Relative path to the xsd file. The service artifacts are placed
+			under : 
+			- WebContentName/<wsdl-path>/<Service-Name>/ for a web-app.
+			The value of this element should be relative to the <Service-Name> folder. -->
+			<xsd>OrganisationService.xsd</xsd>
+			<request-msg>
+				<!-- Flag indicating validation-flag (on/off) -->
+				<validation-flag>on</validation-flag>
+			</request-msg>
+			<response-msg>
+				<validation-flag>on</validation-flag>
+			</response-msg>
+		</message-validation>
+	</service>
+</configuration>

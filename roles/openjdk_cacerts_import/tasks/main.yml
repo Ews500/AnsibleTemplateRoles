@@ -1,0 +1,40 @@
+---
+- name: Debug certificate information
+  ansible.builtin.debug:
+    msg:
+      - "Environment: {{ env_code }}"
+      - "Hostname: {{ inventory_hostname }}"
+      - "Certificates to import: {{ cyc_certs | map(attribute='file_name') | list }}"
+
+- name: Copy CyC certs
+  tags: copy_cert
+  ansible.builtin.copy:
+    src: "certs/{{ item.file_name }}"
+    dest: "{{ cacerts_dir }}/{{ item.file_name }}"
+    owner: webadmn
+    group: webadmn
+    mode: '0740'
+  with_items: "{{ cyc_certs }}"
+  when: cyc_certs is defined and cyc_certs | length > 0
+
+- name: Import certificate
+  tags: import_cert
+  community.general.java_cert:
+    cert_path: "{{ cacerts_dir }}/{{ item.file_name }}"
+    cert_alias: "{{ item.cert_alias }}"
+    keystore_path: "{{ cacerts_home }}"
+    keystore_pass: "{{ vault.store_pass }}"
+    keystore_create: false
+    state: "{{ item.state }}"
+  with_items: "{{ cyc_certs }}"
+  when: cyc_certs is defined and cyc_certs | length > 0
+  environment:
+    PATH: "{{ java_home }}/bin:{{ ansible_env.PATH }}"
+
+- name: Remove copied certificate
+  tags: remove_cert
+  ansible.builtin.file:
+    state: absent
+    dest: "{{ cacerts_dir }}/{{ item.file_name }}"
+  with_items: "{{ cyc_certs }}"
+  when: cyc_certs is defined and cyc_certs | length > 0

@@ -1,0 +1,7 @@
+- name: Append Web Server Plugin
+  tags: ihs_plgin_config
+  ansible.builtin.include_tasks: ihs_plgin_update.yml
+
+- name: Add WAS SSL to  Web Server KDB Database
+  tags: app_ihs_ssl_kdb_config
+  ansible.builtin.include_tasks: node_kdb_ssl.yml

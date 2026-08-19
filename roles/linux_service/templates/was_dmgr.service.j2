@@ -1,0 +1,19 @@
+[Unit]
+Description=IBM WebSphere Application Server Deployment Manager
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+PIDFile={{ was_path }}/profiles/{{ dmgr_profile }}/logs/{{ dmgr_server }}/{{ dmgr_server }}.pid
+ExecStart={{ was_path }}/profiles/{{ dmgr_profile }}/bin/startManager.sh
+ExecStop={{ was_path }}/profiles/{{ dmgr_profile }}/bin/stopManager.sh
+User=webadmn
+Group=webadmn
+# Allow a minute for ExecStop before systemd sends SIGTERM
+TimeoutSec=180
+# JVM returns 143 after being killed with SIGTERM
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

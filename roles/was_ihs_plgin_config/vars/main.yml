@@ -1,0 +1,39 @@
+---
+tpl_file: "plugin-cfg-template.rsp.j2"
+rsp_file: "plugin-cfg-template.xml"
+ihs_path: "/app/HTTPServer"
+ihs_plg_path: "/app/HTTPPlugins"
+ihs_plg_config: "{{ ihs_plg_path }}/config/webserver1"
+keyringfile: "{{ ihs_plg_config }}/plugin-key.kdb"
+stashfile: "{{ ihs_plg_config }}/plugin-key.sth"
+server_name: "{{ node_name }}_server1"
+
+appsrvr_vars:
+  was_soap_port: "{{ env_vars.was_soap_port }}"
+  profile_name: "{{ env_vars.profile_name }}"
+  wsadmin_path: "{{ was_path }}/profiles/{{ env_vars.profile_name }}/bin"
+  profile_dir: "{{ was_path }}/profiles/{{ env_vars.profile_name }}"
+  java_dir: "{{ was_path }}/java/8.0"
+  tmp_dir: "/tmp/plugins"
+
+profile_port_list:
+  - endpoint_name: WC_adminhost
+    port_value: "{{ env_vars.was_admin_port }}"
+  - endpoint_name: WC_adminhost_secure
+    port_value: "{{ env_vars.was_admin_port_secure }}"
+  - endpoint_name: WC_defaulthost
+    port_value: "{{ env_vars.was_http_port }}"
+  - endpoint_name: WC_defaulthost_secure
+    port_value: "{{ env_vars.was_https_port }}"
+  - endpoint_name: BOOTSTRAP_ADDRESS
+    port_value: "{{ env_vars.was_bootstrap_port }}"
+  - endpoint_name: SOAP_CONNECTOR_ADDRESS
+    port_value: "{{ env_vars.was_soap_port }}"
+
+app_host_ports:
+  wsd_port_value: 80
+  wsds_port_value: 443
+  wsdhttp_port_value: 8000
+  wsdhttps_port_value: 8004
+  http_port_value: "{{ env_vars.was_http_port }}"
+  https_port_value: "{{ env_vars.was_https_port }}"

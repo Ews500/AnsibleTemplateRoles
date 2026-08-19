@@ -1,0 +1,11 @@
+---
+
+standalone_vars:
+  hostname_var: "{{ 'was-prod' if env_code in ['RELS', 'PROD'] else 'was-test' }}"
+
+nd_vars:
+  hostname_var: "{{ 'wasnd-prod' if env_code in ['RELS', 'PROD'] else 'wasnd-test' }}"
+
+additional_urls:
+  - "{{ app_vars.url_prod1 if env_code in ['RELS', 'PROD'] and app_vars.url_prod1 is defined else app_vars.url_test }}"
+  - "{{ app_vars.url_prod2 if env_code in ['RELS', 'PROD'] and app_vars.url_prod2 is defined }}"

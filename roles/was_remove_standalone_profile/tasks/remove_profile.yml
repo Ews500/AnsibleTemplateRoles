@@ -1,0 +1,35 @@
+- name: Remove profile
+  tags: remove_profile
+  ansible.builtin.command: >
+    {{ was_path }}/bin/manageprofiles.sh -delete -profileName {{ env_vars.profile_name }}
+  register: profile_removal_output
+  changed_when: "'INSTCONFSUCCESS' in profile_removal_output.stdout or 'INSTCONFPARTIALSUCCESS' in profile_removal_output.stdout"
+  failed_when: "'INSTCONFFAILED' in profile_removal_output.stdout and 'Cannot find the' not in profile_removal_output.stdout and 'Cannot find the' not in profile_removal_output.stderr" # noqa yaml[line-length]
+
+- name: Debug remove profile output
+  ansible.builtin.debug:
+    msg: "Profile removal output: {{ profile_removal_output.stdout }}"
+
+- name: Set profile_exists_flag after profile removed
+  ansible.builtin.set_fact:
+    profile_exists_flag: false
+  when: "('INSTCONFSUCCESS' in profile_removal_output.stdout or 'INSTCONFPARTIALSUCCESS' in profile_removal_output.stdout) or ('Cannot find the' in profile_removal_output.stdout or 'Cannot find the' in profile_removal_output.stderr)" # noqa yaml[line-length]
+
+- name: Remove profile directory
+  tags: remove_profile_dir
+  ansible.builtin.file:
+    path: "{{ profile_dir }}"
+    state: absent
+  when: "'INSTCONFSUCCESS' in profile_removal_output.stdout or 'INSTCONFPARTIALSUCCESS' in profile_removal_output.stdout"
+
+- name: Update Registry for deleted profile
+  tags: update_registry
+  ansible.builtin.command: >
+    {{ was_path }}/bin/manageprofiles.sh -validateAndUpdateRegistry
+  when: "'INSTCONFSUCCESS' in profile_removal_output.stdout or 'INSTCONFPARTIALSUCCESS' in profile_removal_output.stdout"
+  register: registry_update_output
+  changed_when: "'INSTCONFSUCCESS' in profile_removal_output.stdout or 'INSTCONFPARTIALSUCCESS' in profile_removal_output.stdout"
+
+- name: Debug registry update output
+  ansible.builtin.debug:
+    msg: "Registry update output: {{ registry_update_output.stdout }}"

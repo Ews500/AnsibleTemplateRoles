@@ -1,0 +1,34 @@
+# roles/installation_manager_install/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/installation_manager_install/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the installation_manager_install role
+    description:
+      - This is the main entrypoint for the C(installation_manager_install) role.
+      - Installs IBM Installation Manager which is prerequisite for all IBM software.
+      - Checks if Installation Manager is already installed before proceeding.
+      - Performs silent installation using response files.
+    version_added: 1.0.0
+    author:
+      - Manbir Singh (@GBMSINGH)
+    options:
+      iim_version:
+        type: "str"
+        required: false
+        default: "1.9.2002.20220323_1321"
+        description:
+          - "IBM Installation Manager version to install"
+          - "Used for version verification"
+      iim_bin_file:
+        type: "str"
+        required: false
+        description:
+          - "Installation Manager binary file"
+          - "Path to the Installation Manager binary"
+      iim_install_location:
+        type: "str"
+        required: false
+        default: "/app/InstallationManager"
+        description:
+          - "Installation Manager binary installation directory"

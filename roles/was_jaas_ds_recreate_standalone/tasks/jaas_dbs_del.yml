@@ -1,0 +1,23 @@
+- name: Copy cleanup script onto target server
+  ansible.builtin.template:
+    src: "jaas_ds_cleanup.py.j2"
+    dest: "{{ remote_script_path }}"
+    mode: "0755"
+
+- name: Execute cleanup script via wsadmin (SOAP)
+  no_log: true # To avoid printing user/pw in output
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -f {{ remote_script_path }}
+  register: cleanup_run
+  changed_when: not (dry_run | bool)
+  failed_when: cleanup_run.rc != 0
+
+- name: Show wsadmin stderr (if any)
+  when: cleanup_run.stderr is defined and cleanup_run.stderr | length > 0
+  ansible.builtin.debug:
+    var: cleanup_run.stderr
+
+- name: Delete cleanup script from target
+  ansible.builtin.file:
+    path: "{{ remote_script_path }}"
+    state: absent

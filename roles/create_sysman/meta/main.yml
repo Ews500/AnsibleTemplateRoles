@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  author: Josh Groves-Waller (@GBJGRO3)
+  description: Create /sysman/operators directories and scripts for WebSphere start and stop operations
+  company: Atradius
+
+  license: proprietary
+
+  min_ansible_version: "2.9"
+
+  platforms:
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+
+  galaxy_tags:
+    - websphere
+    - sysman
+    - operations
+    - scripts
+    - management

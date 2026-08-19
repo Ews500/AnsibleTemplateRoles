@@ -1,0 +1,8 @@
+- name: Modify port in XML file
+  community.general.xml:
+    path: "{{ profile_dir }}/config/cells/{{ env_vars.cell_name }}/nodes/{{ node_name }}/serverindex.xml"
+    xpath: "/*/serverEntries/specialEndpoints[@endPointName='{{ profile_port.endpoint_name }}']/endPoint"
+    attribute: port
+    value: "{{ profile_port.port_value }}"
+    backup: true
+    pretty_print: true

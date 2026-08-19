@@ -1,0 +1,81 @@
+- name: Check if nfstemp is mounted
+  block:
+    - name: Check for nfstemp
+      register: nfstemp
+      ansible.builtin.stat:
+        path: "{{ shared_mount }}"
+
+- name: Check a shared mount is available
+  ansible.builtin.assert:
+    that:
+      - nfstemp.stat.exists
+    fail_msg: "A shared_mount {{ shared_mount }} must be defined!"
+    quiet: true
+
+- name: Install IHS
+  tags: install_IHS
+  block:
+
+    - name: Create temporary directory
+      ansible.builtin.tempfile:
+        state: directory
+        path: "/app"
+        prefix: "install-ihs-binaries-{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}-"
+      register: install_dir
+
+    - name: Create support directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+        owner: webadmn
+        group: webadmn
+      with_items:
+        - "{{ install_dir.path }}/ihs/"
+        - "{{ install_dir.path }}/sdk/"
+        - "{{ install_dir.path }}/ihsplg/"
+        - "{{ install_dir.path }}/ihswct/"
+
+    - name: Extract WebSphere IHS Server Files
+      ansible.builtin.unarchive:
+        src: "{{ ihs_bin_dir }}/{{ ihs_filename }}"
+        dest: "{{ install_dir.path }}/ihs/"
+        copy: false
+
+    - name: Extract WebSphere IHS PLUGIN Files
+      ansible.builtin.unarchive:
+        src: "{{ ihs_plg_bin_dir }}/{{ ihs_plg_filename }}"
+        dest: "{{ install_dir.path }}/ihsplg/"
+        copy: false
+
+    - name: Extract WebSphere IHS WCT Files
+      ansible.builtin.unarchive:
+        src: "{{ ihs_wct_bin_dir }}/{{ ihs_wct_filename }}"
+        dest: "{{ install_dir.path }}/ihswct/"
+        copy: false
+
+    - name: Extract IBM SDK Java
+      ansible.builtin.unarchive:
+        src: "{{ java_bin_dir }}/{{ java_filename }}"
+        dest: "{{ install_dir.path }}/sdk/"
+        copy: false
+
+    - name: Generate WebServer, Plugin, WCT Response file
+      ansible.builtin.template:
+        src: "{{ tpl_file }}"
+        dest: "{{ install_dir.path }}/{{ rsp_file }}"
+        mode: '0755'
+
+    - name: Install HTTP Server, Plugins and WCT
+      ansible.builtin.command: >
+        {{ iim_install_location }}/eclipse/tools/imcl -input {{ install_dir.path }}/{{ rsp_file }} -sP -acceptLicense
+        -record {{ install_dir.path }}/ihs_install_{{ lookup('pipe', 'date +%Y%m%d%H%M') }}.xml -log {{ install_dir.path }}/{{ log_file }}
+      changed_when: true
+
+  ## End of block
+  always:
+    - name: Remove temporary directory for installation
+      ansible.builtin.file:
+        state: absent
+        dest: "{{ install_dir.path }}"
+      when: install_dir.path is defined

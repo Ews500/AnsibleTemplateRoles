@@ -1,0 +1,52 @@
+# TASKS to be executed on dmgr host
+- name: Check cluster members are created
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  block:
+    - name: List cluster members
+      ansible.builtin.command: >
+        {{ was_path }}/profiles/{{ dmgr_profile }}/bin/wsadmin.sh -lang jython -conntype SOAP -c "
+        AdminConfig.list('ClusterMember', AdminConfig.getid( '/Cell:{{ env_vars.cell_name }}/ServerCluster:{{ env_vars.cluster_name }}/'))"
+      register: cluster_member_check
+      changed_when: false
+      failed_when: cluster_member_check.rc != 0
+
+    - name: Debug cluster member check output
+      ansible.builtin.debug:
+        var: cluster_member_check.stdout
+
+# TASKS to be executed on cluster member host
+- name: Ensure cluster member does not already exist
+  ansible.builtin.debug:
+    msg: "Cluster member {{ env_vars.server_name }} already exists in cluster {{ env_vars.cluster_name }}."
+  when: env_vars.server_name in cluster_member_check.stdout
+
+- name: Create cluster members for all nodes
+  when: env_vars.server_name not in cluster_member_check.stdout
+  block:
+    - name: Create cluster member if it does not exist
+      ansible.builtin.command: >
+        {{ profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c "
+        AdminTask.createClusterMember('[-clusterName {{ env_vars.cluster_name }}
+        -memberConfig [-memberNode {{ ansible_hostname }}Node01
+        -memberName {{ env_vars.server_name }} -memberWeight 2 -replicatorEntry true]]');
+        AdminConfig.save();
+        AdminNodeManagement.syncActiveNodes()"
+      when: env_vars.server_name not in cluster_member_check.stdout_lines
+      register: cluster_member_creation
+      changed_when: cluster_member_creation.rc == 0
+
+    - name: Set MonitoringPolicy for Cluster Servers
+      ansible.builtin.command: >
+        {{ profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c "
+        AdminConfig.modify(AdminConfig.list('MonitoringPolicy',
+        AdminConfig.list('Server', AdminConfig.getid('/Cell:{{ env_vars.cell_name }}/Node:{{ ansible_hostname }}Node01/Server:{{ env_vars.server_name }}/'))),
+        '[[nodeRestartState "RUNNING"]]');
+        AdminConfig.save();
+        AdminNodeManagement.syncActiveNodes()"
+      register: monitoring_policy
+      changed_when: monitoring_policy.rc == 0
+
+    - name: Debug cluster member creation
+      ansible.builtin.debug:
+        msg: "Cluster '{{ env_vars.cluster_name }}' members: {{ cluster_member_creation.stdout }}"

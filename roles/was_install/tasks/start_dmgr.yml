@@ -1,0 +1,24 @@
+- name: Start WebSphere Application Server Deployment Manager
+  delegate_to: "{{ dmgr_host }}"
+  run_once: true
+  block:
+    - name: Check if the .pid file exists
+      ansible.builtin.stat:
+        path: "{{ target_group_vars.was_path }}/profiles/{{ target_group_vars.dmgr_profile }}/logs/dmgr/dmgr.pid"
+      register: pid_file_check
+
+    - name: Verify if process is running using pid file
+      ansible.builtin.shell: "ps -p $(cat {{ target_group_vars.was_path }}/profiles/{{ target_group_vars.dmgr_profile }}/logs/dmgr/dmgr.pid) > /dev/null" # noqa yaml[line-length]
+      register: deployment_manager_is_running
+      ignore_errors: true
+      changed_when: false
+      when: pid_file_check.stat.exists
+
+    - name: Start Deployment Manager
+      ansible.builtin.command: "sudo /bin/systemctl start was_dmgr.service"
+      register: dmgr_start
+      changed_when: dmgr_start.rc == 0
+      failed_when: dmgr_start.rc != 0
+      when: not pid_file_check.stat.exists or deployment_manager_is_running.rc != 0
+      async: 90 # wait for up to 90 sec, poll every 10 sec
+      poll: 10

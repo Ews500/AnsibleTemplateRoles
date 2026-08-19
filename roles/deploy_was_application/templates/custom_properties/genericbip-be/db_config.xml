@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<!-- Database related configuration block -->
+	<database>
+		<defaultDataSource>{{ env_vars.jdbc_datasource_list | json_query('[?db_name==`%s`].db_name' | format(vault[app].sym_db_name)) | join(" ") }}</defaultDataSource>
+		<datasource>
+			<name>{{ env_vars.jdbc_datasource_list | json_query('[?db_name==`%s`].db_name' | format(vault[app].sym_db_name)) | join(" ") }}</name>
+			<schema>{{ env_vars.jdbc_datasource_list | json_query('[?db_name==`%s`].schema_name' | format(vault[app].sym_db_name)) | join(" ") }}</schema>
+			<providerURL>iiop://localhost:{{ env_vars.was_bootstrap_port }}</providerURL>
+			<factory>com.ibm.websphere.naming.WsnInitialContextFactory</factory>
+			<jndiName>{{ env_vars.jdbc_datasource_list | json_query('[?db_name==`%s`].jndi_name' | format(vault[app].sym_db_name)) | join(" ") }}</jndiName>
+		</datasource>
+	</database>
+</configuration>

@@ -1,0 +1,9 @@
+- name: Clear profile cache
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/osgiCfgInit.sh"
+  changed_when: true
+
+- name: Clear JVM class cache
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/clearClassCache.sh"
+  changed_when: true

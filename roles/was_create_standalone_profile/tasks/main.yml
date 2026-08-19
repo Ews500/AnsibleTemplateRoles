@@ -1,0 +1,137 @@
+- name: Check if the profile directory exists
+  tags: check_profile
+  ansible.builtin.stat:
+    path: "{{ profile_dir }}"
+  register: profile_exists
+
+- name: Set profile_exists_flag based on profile existence
+  tags: check_profile
+  ansible.builtin.set_fact:
+    profile_exists_flag: "{{ profile_exists.stat.exists }}"
+
+- name: Create profile if it does not exist
+  tags: create_profile
+  ansible.builtin.include_tasks: create_profile.yml
+  when: not profile_exists_flag
+
+# Run the remaining tasks only if the profile exists or was created
+- name: Configure profile
+  tags: config_profile
+  when: profile_exists_flag
+  block:
+
+    - name: Set Profile Security
+      tags: set_security
+      ansible.builtin.include_tasks: set_security.yml
+
+    - name: Start Server
+      tags: start_server
+      ansible.builtin.include_tasks: start_server.yml
+
+    - name: Retrieve server node name
+      ansible.builtin.command: >
+        {{ profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP -c "
+        serverID = AdminControl.completeObjectName('WebSphere:type=Server,name={{ env_vars.server_name }},*');
+        print AdminControl.getAttribute(serverID, 'nodeName')"
+      register: node_name_output
+      changed_when: false
+      failed_when: node_name_output.rc != 0
+
+    - name: Set fact for extracted node name
+      ansible.builtin.set_fact:
+        node_name: "{{ node_name_output.stdout_lines[-1] }}"
+
+    - name: Set Profile JVM Size
+      tags: jvm
+      ansible.builtin.include_tasks: jvm_config.yml
+
+    - name: Setup profile ports
+      tags: port_config
+      ansible.builtin.include_tasks: port_config.yml
+      loop: "{{ profile_port_list }}"
+      loop_control:
+        loop_var: profile_port
+      when: profile_port_list is defined
+
+    - name: Uninstall Default Applications
+      tags: uninstall_apps
+      ansible.builtin.include_tasks: uninstall_apps.yml
+      loop: "{{ app_uninstall_list }}"
+      loop_control:
+        loop_var: app_uninstall
+      when: app_uninstall_list is defined
+
+    - name: Set JPA config
+      tags: jpa_config
+      ansible.builtin.include_tasks: jpa_config.yml
+      when: app_vars.jpa_config is defined
+
+- name: Configure resources
+  tags: config_resources
+  when: profile_exists_flag
+  block:
+
+    - name: Setup JDBC providers
+      tags: jdbc
+      ansible.builtin.include_tasks: jdbc_provider_config.yml
+      loop: "{{ jdbc_provider_list }}"
+      loop_control:
+        loop_var: jdbc_provider
+      when: jdbc_provider_list is defined
+
+    - name: Setup JDBC data sources
+      tags: jdbc
+      ansible.builtin.include_tasks: jdbc_datasource_config.yml
+      no_log: true # To avoid printing user/pw in output
+      loop: "{{ env_vars.jdbc_datasource_list }}"
+      loop_control:
+        loop_var: jdbc_datasource
+      when: env_vars.jdbc_datasource_list is defined
+
+    - name: Configure JDBC datasource connection pool properties
+      tags: jdbc_connection_pool
+      ansible.builtin.include_tasks: jdbc_datasource_connection_pool_config.yml
+      no_log: true # To avoid printing user/pw in output
+      loop: "{{ env_vars.jdbc_datasource_list }}"
+      loop_control:
+        loop_var: jdbc_datasource
+      when: env_vars.jdbc_datasource_list is defined
+
+    - name: Setup Virtual hosts and Host aliases
+      tags: vhosts
+      ansible.builtin.include_tasks: virtualhost_alias_config.yml
+      loop: "{{ virtual_host_list }}"
+      loop_control:
+        loop_var: virtual_host
+      when: virtual_host_list is defined
+
+    - name: Setup Mail Session
+      tags: mail_session
+      ansible.builtin.include_tasks: mail_session_config.yml
+
+    - name: Setup Service Integraton Bus and JMS resources
+      tags: sibus_jms
+      ansible.builtin.include_tasks: jms_bus_config.yml
+      when: env_vars.sibus is defined
+
+    - name: Setup EJB JNDI Cconnection for Resource Provder
+      tags: ejb_jndi
+      ansible.builtin.include_tasks: ejb_jndi_config.yml
+      when: env_vars.ejb_jndi_config is defined
+
+    # Last tasks - at the end of the role
+    - name: Remove temp file
+      tags: tmp_logs
+      ansible.builtin.include_tasks: tmplogs_cleanup.yml
+
+    - name: Stop Server
+      tags: stop_start
+      ansible.builtin.include_tasks: stop_server.yml
+
+    - name: Clear JVM and profile cache
+      tags: clear_cache
+      ansible.builtin.include_tasks: jvm_cache_clear.yml
+
+    - name: Start Server
+      tags: stop_start
+      ansible.builtin.include_tasks: start_server.yml

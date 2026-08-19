@@ -1,0 +1,45 @@
+profile_dir: "{{ was_path }}/profiles/{{ env_vars.profile_name }}"
+node_server_dir: "{{ was_path }}/profiles/{{ env_vars.profile_name }}/servers/{{ env_vars.server_name }}"
+dmgr_profile_dir: "{{ was_path }}/profiles/{{ dmgr_profile }}"
+dmgr_profile: "Dmgr01"
+dmgr_node: "DmgrNode01"
+node_name: "{{ ansible_hostname }}Node01"
+nodeagent_service: was_nodeagent
+stop_nodeagent: stopNode.sh
+
+profile_port_list:
+  - endpoint_name: WC_defaulthost
+    port_value: "{{ env_vars.was_http_port }}"
+  - endpoint_name: WC_defaulthost_secure
+    port_value: "{{ env_vars.was_https_port }}"
+  - endpoint_name: BOOTSTRAP_ADDRESS
+    port_value: "{{ env_vars.was_bootstrap_port }}"
+  - endpoint_name: SOAP_CONNECTOR_ADDRESS
+    port_value: "{{ env_vars.was_soap_port }}"
+
+virtual_host_list:
+  - name: default_host
+    ports:
+      - port_value: 80
+        desc: "Web server HTTP default port"
+      - port_value: 443
+        desc: "Web server HTTPS default port"
+      - port_value: 8000
+        desc: "Web server HTTP port"
+      - port_value: 8004
+        desc: "Web server HTTPS port"
+      - port_value: "{{ env_vars.was_http_port }}"
+        desc: "WC_defaulthost"
+      - port_value: "{{ env_vars.was_https_port }}"
+        desc: "WC_defaulthost_secure"
+
+jdbc_provider_list:
+  - name: "Oracle JDBC Driver"
+    provider_type: "Oracle JDBC Driver"
+    db_type: "Oracle"
+    impl_type: "Connection pool data source"
+    impl_class_name: "oracle.jdbc.pool.OracleConnectionPoolDataSource"
+    classpath: "[${ORACLE_JDBC_DRIVER_PATH}/ojdbc8.jar]"
+    native_path: "/app/OracleDriver"
+    was_var_name: "ORACLE_JDBC_DRIVER_PATH"
+    was_var_desc: "Oracle JDBC Driver Path"

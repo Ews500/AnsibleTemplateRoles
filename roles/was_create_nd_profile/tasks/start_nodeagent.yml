@@ -1,0 +1,16 @@
+- name: Verify if pid file
+  ansible.builtin.shell:
+    cmd: "set -o pipefail && ps -fu webadmn | grep java | egrep -E -- 'nodeagent' | awk {'print $2'}"
+  register: nodeagent_is_running
+  ignore_errors: true
+  changed_when: false
+
+- name: Start nodeagent
+  ansible.builtin.command:
+    cmd: "{{ profiles_dir }}/bin/startNode.sh"
+  register: node_agent_start
+  changed_when: node_agent_start.rc == 0
+  failed_when: node_agent_start.rc != 0
+  when: nodeagent_is_running.rc != 0
+  async: 60 # wait for up to 60 sec, poll every 10 sec
+  poll: 10

@@ -1,0 +1,10 @@
+- name: Start WebSphere server
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/startServer.sh {{ env_vars.server_name }}"
+  register: serverstatus_output
+  failed_when: "'Server env_vars.server_name is already started' not in serverstatus_output.stdout and serverstatus_output.rc != 0"
+  changed_when: "'Server env_vars.server_name is open for e-business' in serverstatus_output.stdout"
+
+- name: Show updated Server Status
+  ansible.builtin.debug:
+    msg: "Server start output: {{ serverstatus_output.stdout }}"

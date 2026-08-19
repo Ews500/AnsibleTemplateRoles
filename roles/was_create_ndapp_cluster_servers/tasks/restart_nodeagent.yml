@@ -1,0 +1,95 @@
+- name: Output application and host level variables
+  ansible.builtin.debug:
+    msg: "app_name - {{ env_vars.app_name }}, profile_name - {{ env_vars.profile_name }}, server_name - {{ env_vars.server_name }}, was_path - {{ was_path }}"
+
+- name: Set service_name
+  tags: always
+  ansible.builtin.set_fact:
+    service_name: "{{ nodeagent_service }}.service"
+
+# Stop Node Agent
+- name: Stop Node Agent
+  tags: stop_nodeagent
+  block:
+
+    - name: Check service status
+      ansible.builtin.service_facts:
+
+    - name: Output service status
+      ansible.builtin.debug:
+        var: ansible_facts.services[service_name]
+
+    - name: Check if processes are running
+      become: true
+      ansible.builtin.shell: "set -o pipefail && ps -fu webadmn \
+        | grep java | grep -v grep | egrep -E -- 'nodeagent' | awk {'print $2'}"  # noqa no-changed-when
+      register: running_processes
+      failed_when: false
+
+    - name: Print process ID
+      ansible.builtin.debug:
+        var: running_processes.stdout_lines
+      when: running_processes.stdout_lines | length > 0
+
+    - name: Stop nodeagent if service is not running and process is running  # noqa no-changed-when
+      become: true
+      ansible.builtin.command:
+        cmd: "{{ was_path }}/profiles/{{ env_vars.profile_name }}/bin/{{ stop_nodeagent }} }}"
+      when:
+        - ansible_facts.services[service_name].state != "running"
+        - running_processes.stdout_lines | length > 0
+      async: 30 # wait for up to 30 sec, poll every 10 sec
+      poll: 10
+
+    - name: Stop service if service is running
+      become: true
+      become_user: root
+      ansible.builtin.systemd:
+        name: "{{ service_name }}"
+        state: stopped
+      when: ansible_facts.services[service_name].state == "running"
+      async: 30 # wait for up to 30 sec, poll every 10 sec
+      poll: 10
+
+  rescue:
+    - name: Kill nodeagent PIDs
+      ansible.builtin.command: "kill -9 {{ kill_pid }}"
+      with_items: "{{ running_processes.stdout_lines }}"
+      loop_control:
+        loop_var: kill_pid
+      changed_when: kill_pid.rc == 0
+      failed_when: kill_pid.rc != 0
+
+# Start Node Agent
+- name: Start Node Agent
+  tags: start_nodeagent
+  block:
+
+    - name: Check service status
+      ansible.builtin.service_facts:
+
+    - name: Output service status
+      ansible.builtin.debug:
+        var: ansible_facts.services[service_name]
+      failed_when: ansible_facts.services[service_name].state == "running"
+
+    - name: Check if processes are running
+      become: true
+      ansible.builtin.shell: "set -o pipefail && ps -fu webadmn \
+        | grep java | grep -v grep | egrep -E -- 'nodeagent' | awk {'print $2'}"  # noqa no-changed-when
+      register: running_processes
+      failed_when: false
+
+    - name: Print process ID
+      ansible.builtin.debug:
+        msg: "Process already running PID '{{ running_processes.stdout_lines }}'"
+      when: running_processes.stdout_lines | length > 0
+
+    - name: Start service
+      become: true
+      become_user: root
+      ansible.builtin.systemd:
+        name: "{{ service_name }}"
+        state: started
+      async: 90 # wait for up to 90 sec, poll every 10 sec
+      poll: 10

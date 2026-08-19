@@ -1,0 +1,117 @@
+- name: Extract SSL Certificate
+  ansible.builtin.command: >
+    {{ appsrvr_vars.java_dir }}/jre/bin/ikeycmd -cert -extract -db
+    {{ appsrvr_vars.profile_dir }}/config/cells/{{ env_vars.cell_name }}/nodes/{{ node_name }}/root-key.p12
+    -label root -target /tmp/{{ node_name }}_{{ appsrvr_vars.profile_name }}.arm -pw {{ vault.default_ssl_pwd }}
+  changed_when: false
+
+- name: Fetch SSL certificate to controller
+  ansible.builtin.fetch:
+    src: "/tmp/{{ node_name }}_{{ appsrvr_vars.profile_name }}.arm"
+    dest: "/tmp/"
+    flat: true
+
+# =================================================================
+# 2. Select Primary and Secondary Standalone IHS Hosts Dynamically
+# =================================================================
+
+- name: Filter standalone IHS hosts based on environment
+  ansible.builtin.set_fact:
+    standalone_ihs_hosts: >-
+      {{
+        groups['ihs'] |
+        select('match', ihs_pattern_map[env_code]) |
+        list |
+        sort
+      }}
+  vars:
+    ihs_pattern_map:
+      FATW: '^ltwas00[1-2].*'
+      FATF: '^ltwas00[1-2].*'
+      BAT: '^ltwas00[1-2].*'
+      PROD: '^lpwas00[1-2].*'
+
+- name: Set primary and secondary IHS hosts
+  ansible.builtin.set_fact:
+    primary_ihs_host: "{{ standalone_ihs_hosts[0] }}"
+    secondary_ihs_host: "{{ standalone_ihs_hosts[1] }}"
+
+- name: Debug primary and secondary IHS hosts
+  ansible.builtin.debug:
+    msg: |
+      Primary IHS host is {{ primary_ihs_host }}
+      Secondary IHS host is {{ secondary_ihs_host }}
+
+- name: Copy SSL cert to WebServer
+  ansible.builtin.copy:
+    src: "/tmp/{{ node_name }}_{{ appsrvr_vars.profile_name }}.arm"
+    dest: "{{ ihs_plg_config }}/"
+    mode: '0644'
+  delegate_to: "{{ primary_ihs_host }}"
+
+- name: Add cert to plugin key database
+  ansible.builtin.command: >
+    {{ ihs_path }}/bin/gskcapicmd -cert -add -db {{ ihs_plg_config }}/plugin-key.kdb
+    -pw {{ vault.default_ssl_pwd }} -file {{ ihs_plg_config }}/{{ node_name }}_{{ appsrvr_vars.profile_name }}.arm
+    -label {{ node_name }}_{{ appsrvr_vars.profile_name }}_{{ lookup('pipe', 'date +%Y%m%d') }}
+  register: add_cert_result
+  delegate_to: "{{ primary_ihs_host }}"
+  changed_when: add_cert_result.rc != 0
+
+- name: Confirm certificate addition
+  ansible.builtin.debug:
+    msg: "Certificate added successfully to plugin key database"
+
+- name: Clean up temporary SSL certificate file
+  ansible.builtin.file:
+    path: "{{ ihs_plg_config }}/{{ node_name }}_{{ appsrvr_vars.profile_name }}.arm"
+    state: absent
+  delegate_to: "{{ primary_ihs_host }}"
+
+- name: Restart Primary Web Server
+  tags: restart_pri_ihs
+  delegate_to: "{{ primary_ihs_host }}"
+  run_once: true
+  block:
+    - name: Stop WebServer Services
+      tags: stop_ihs
+      ansible.builtin.include_tasks: stop_ihs_services.yml
+
+    - name: Start WebServer Services
+      tags: start_ihs
+      ansible.builtin.include_tasks: start_ihs_services.yml
+
+# ========================================================
+# 4. Copy plugin-key.kdb from primary to secondary IHS
+# ========================================================
+
+- name: Fetch plugin-key.kdb from primary to control node
+  tags: fetch_plgkdb_ihs
+  ansible.builtin.fetch:
+    src: "{{ ihs_plg_config }}/plugin-key.kdb"
+    dest: "/tmp/{{ secondary_ihs_host }}-plugin-key.kdb"
+    flat: true
+  delegate_to: "{{ primary_ihs_host }}"
+  when: secondary_ihs_host is defined
+
+- name: Copy plugin-key.kdb from control node to secondary IHS
+  tags: copy_plgkdb_ihs
+  ansible.builtin.copy:
+    src: "/tmp/{{ secondary_ihs_host }}-plugin-key.kdb"
+    dest: "{{ ihs_plg_config }}/plugin-key.kdb"
+    mode: "0644"
+  delegate_to: "{{ secondary_ihs_host }}"
+  when: secondary_ihs_host is defined
+
+- name: Restart Secondary Web Server
+  tags: restart_sec_ihs
+  delegate_to: "{{ secondary_ihs_host }}"
+  when: secondary_ihs_host is defined
+  block:
+    - name: Stop WebServer Services
+      tags: stop_ihs
+      ansible.builtin.include_tasks: stop_ihs_services.yml
+
+    - name: Start WebServer Services
+      tags: start_ihs
+      ansible.builtin.include_tasks: start_ihs_services.yml

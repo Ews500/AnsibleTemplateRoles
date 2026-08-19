@@ -1,0 +1,11 @@
+profile_dir: "{{ was_path }}/profiles/{{ env_vars.profile_name }}"
+node_server_dir: "{{ was_path }}/profiles/{{ env_vars.profile_name }}/servers/{{ env_vars.server_name }}"
+dmgr_profile_dir: "{{ was_path }}/profiles/{{ dmgr_profile }}"
+dmgr_profile: "Dmgr01"
+dmgr_node: "DmgrNode01"
+node_name: "{{ ansible_hostname }}Node01"
+cluster_query_str: "cell={{ env_vars.cell_name }},type=Cluster,name={{ env_vars.cluster_name }},*"
+
+temp_script: /tmp/update_j2c.py
+temp_stop_cluster_script: /tmp/stop_cluster_{{ env_vars.cluster_name }}.py
+temp_start_cluster_script: /tmp/start_cluster_{{ env_vars.cluster_name }}.py

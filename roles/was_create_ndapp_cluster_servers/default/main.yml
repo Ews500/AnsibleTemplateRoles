@@ -1,0 +1,5 @@
+cluster_exists_flag: false # Default flag indicating if cluster exists (updated dynamically in tasks)
+
+# JVM heap size
+initial_heap_size: 1024
+maximum_heap_size: 2048

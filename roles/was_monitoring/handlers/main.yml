@@ -1,0 +1,5 @@
+- name: Restart NRPE service
+  ansible.builtin.systemd:
+    name: nrpe
+    state: restarted
+    enabled: true

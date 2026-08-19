@@ -1,0 +1,19 @@
+[Unit]
+Description=IBM WebSphere Application Server {{ env_vars.profile_name }}
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+PIDFile={{ was_path }}/profiles/{{ env_vars.profile_name }}/logs/{{ env_vars.server_name }}/{{ env_vars.server_name }}.pid
+ExecStart={{ was_path }}/profiles/{{ env_vars.profile_name }}/bin/startServer.sh {{ env_vars.server_name }}
+ExecStop={{ was_path }}/profiles/{{ env_vars.profile_name }}/bin/stopServer.sh {{ env_vars.server_name }}
+User=webadmn
+Group=webadmn
+# Increase default start and stop timeout
+TimeoutSec={{ timeoutsec_systemd | default(600) }}
+# JVM returns 143 after being killed with SIGTERM
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

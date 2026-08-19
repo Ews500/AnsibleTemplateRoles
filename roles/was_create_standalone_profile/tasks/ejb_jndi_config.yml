@@ -1,0 +1,70 @@
+- name: Create Resource Environment Provider # noqa yaml[line-length]
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c "
+    AdminConfig.create('ResourceEnvironmentProvider',
+    AdminConfig.getid('/Cell:{{ env_vars.cell_name }}/Node:{{ node_name }}/Server:{{ env_vars.server_name }}/'),
+    '[[name {{ env_vars.ejb_jndi_config.rep_name }}] [isolatedClassLoader "false"]]')"
+  register: rep_creation
+  changed_when: rep_creation.rc == 0
+  failed_when: rep_creation.rc != 0
+
+- name: Save the WebSphere configuration
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c 'AdminConfig.save()'"
+  changed_when: true
+
+- name: Create Referenceable for Resource Environment Provider # noqa yaml[line-length]
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c "
+    AdminConfig.create('Referenceable',
+    AdminConfig.getid('/Cell:{{ env_vars.cell_name }}/Node:{{ node_name }}/Server:{{ env_vars.server_name }}
+    /ResourceEnvironmentProvider:{{ env_vars.ejb_jndi_config.rep_name }}/'),
+    '[[factoryClassname {{ env_vars.ejb_jndi_config.repf_classname }}] [classname {{ env_vars.ejb_jndi_config.rep_classname }}]]')"
+  changed_when: referenceable_creation.rc == 0
+  failed_when: referenceable_creation.rc != 0
+  register: referenceable_creation
+
+- name: Save the WebSphere configuration
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c 'AdminConfig.save()'"
+  when: referenceable_creation is defined
+  changed_when: true
+  register: save_output
+
+- name: Get Referenceable List
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c "
+    print(AdminConfig.list('Referenceable')).splitlines()"
+  register: referenceable_output
+  changed_when: false
+
+- name: Extract Referenceable Value
+  ansible.builtin.set_fact:
+    referenceable_value: "{{ referenceable_output.stdout | regex_findall('\\(cells.*?\\)') | first }}"
+
+- name: Show Referenceable List
+  ansible.builtin.debug:
+    msg: "{{ referenceable_value }}"
+
+- name: Create Resource Environment Entry # noqa yaml[line-length]
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c "
+    AdminConfig.create('ResourceEnvEntry',
+    AdminConfig.getid('/Cell:{{ env_vars.cell_name }}/Node:{{ node_name }}/Server:{{ env_vars.server_name }}
+    /ResourceEnvironmentProvider:{{ env_vars.ejb_jndi_config.rep_name }}/'),
+    '[[referenceable {{ referenceable_value }}] [name {{ env_vars.ejb_jndi_config.res_enventry_name }}]
+    [jndiName {{ env_vars.ejb_jndi_config.res_enventry_jndi }}]]')"
+  register: resenventry_creation
+  changed_when: resenventry_creation.rc == 0
+  failed_when: resenventry_creation.rc != 0
+
+- name: Debug Resource Environment Entry
+  ansible.builtin.debug:
+    msg: "Resource Environment Entry {{ env_vars.ejb_jndi_config.res_enventry_name }}: {{ resenventry_creation.stdout }}"
+  when: resenventry_creation is defined
+
+- name: Save the WebSphere configuration
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c 'AdminConfig.save()'"
+  when: resenventry_creation is defined
+  changed_when: true

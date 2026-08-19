@@ -1,0 +1,3 @@
+- name: Stop Was Services for Standalone
+  ansible.builtin.command: "{{ target_group_vars.was_services_scripts }}/stop_all_services.sh"
+  changed_when: true

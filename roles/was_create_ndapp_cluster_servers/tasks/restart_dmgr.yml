@@ -1,0 +1,44 @@
+# Restart DMGR
+
+- name: Restart Deployment Manager
+  tags: restart_dmgr
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  block:
+
+    # Stop DMGR
+
+    - name: Verify if pid file exists and process is running
+      ansible.builtin.shell: "ps -p $(cat {{ was_path }}/profiles/{{ dmgr_profile }}/logs/dmgr/dmgr.pid) > /dev/null"
+      register: dmgr_is_running
+      ignore_errors: true
+      changed_when: false
+
+    - name: Stop Deployment Manager
+      ansible.builtin.command: "sudo /bin/systemctl stop was_dmgr.service"
+      register: dmgr_stop
+      changed_when: dmgr_stop.rc == 0
+      when: dmgr_is_running.rc == 0
+
+    # Start DMGR
+
+    - name: Check if the .pid file exists
+      ansible.builtin.stat:
+        path: "{{ was_path }}/profiles/{{ dmgr_profile }}/logs/dmgr/dmgr.pid"
+      register: pid_file_check
+
+    - name: Verify if process is running using pid file
+      ansible.builtin.shell: "ps -p $(cat {{ was_path }}/profiles/{{ dmgr_profile }}/logs/dmgr/dmgr.pid) > /dev/null"
+      register: dmgr_is_running
+      ignore_errors: true
+      changed_when: false
+      when: pid_file_check.stat.exists
+
+    - name: Start Deployment Manager
+      ansible.builtin.command: "sudo /bin/systemctl start was_dmgr.service"
+      register: dmgr_start
+      changed_when: dmgr_start.rc == 0
+      failed_when: dmgr_start.rc != 0
+      when: not pid_file_check.stat.exists or dmgr_is_running.rc != 0
+      async: 90 # wait for up to 90 sec, poll every 10 sec
+      poll: 10

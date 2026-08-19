@@ -1,0 +1,28 @@
+- name: Copy install_app script template
+  ansible.builtin.template:
+    src: "{{ deployment_vars.install_script_name }}"
+    dest: "{{ deploy_dir.path }}/{{ deployment_vars.install_script_name }}"
+    mode: "0600"
+
+- name: Set wsadmin_install_cmd fact
+  ansible.builtin.set_fact:
+    wsadmin_install_cmd: "{{ deployment_vars.wsadmin_path }}/wsadmin.sh -conntype soap \
+      -host {{ soap_host | default('localhost') }} \
+      -port {{ deployment_vars.was_soap_port }} \
+      -javaoption -Xms1024m -javaoption -Xmx2048m -lang jython \
+      -f {{ deploy_dir.path }}/{{ deployment_vars.install_script_name }}"
+
+- name: Print wsadmin command to execute
+  ansible.builtin.debug:
+    msg: "{{ wsadmin_install_cmd }}"
+
+- name: Install application (Jython) # noqa no-changed-when
+  ansible.builtin.command:
+    chdir: "{{ was_path }}/profiles/{{ deployment_vars.profile_name }}/installableApps"
+    cmd: "{{ wsadmin_install_cmd }}"
+  register: install_output
+  failed_when: install_output.rc != 0
+
+- name: Install app output
+  ansible.builtin.debug:
+    msg: "{{ install_output.stdout }}"

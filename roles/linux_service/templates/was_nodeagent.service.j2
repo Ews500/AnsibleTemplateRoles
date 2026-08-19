@@ -1,0 +1,20 @@
+[Unit]
+Description=IBM WebSphere Application Server Node Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+PIDFile={{ was_path }}/profiles/{{ nodeagent_profile }}/logs/{{ nodeagent_server }}/{{ nodeagent_server }}.pid
+ExecStart={{ was_path }}/profiles/{{ nodeagent_profile }}/bin/startNode.sh
+ExecStop={{ was_path }}/profiles/{{ nodeagent_profile }}/bin/stopNode.sh
+User=webadmn
+Group=webadmn
+# Increase default start and stop timeout
+TimeoutSec=180
+# JVM returns 143 after being killed with SIGTERM
+SuccessExitStatus=143
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,30 @@
+# roles/was_remove_standalone_profile/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/was_remove_standalone_profile/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the was_remove_standalone_profile role
+    description:
+      - This is the main entry point for the C(was_remove_standalone_profile) role.
+      - First it is verified that the profile_dir path exists and registers it as a variable C(profile_exists).
+      - It then sets the profile_exists_flag as a fact whether the profile exists or not. By default it is set to true
+        as defined in the /default/main.yml as we expect the profile to exist.
+      - The C(remove_profile.yml) task is then invoked, only if the profile_exists_flag is true.
+      - The C(remove_profile.yml) will first call the stop_service role to stop the application server.
+      - After that, the profile removal happens by running the WAS built-in C(manageprofiles.sh) script.
+      - The C(manageprofile.sh) script will register the result to profile_removal_output and sets the
+        profile_exists_flag to false if the profile has been successfully removed.
+      - If successfully removed, the Profile home directory is then removed.
+      - If the manageprofiles returns a "INSTCONFPARTIALSUCCESS", the Profile home directory is still removed
+        and the manageprofiles script is invoked again with the "-validateAndUpdateRegistry" flag
+        to remove references in the registy of the deleted profile.
+    version_added: 1.0.0
+    author:
+      - Daniel Pitt (@GBDPIT1)
+    options:
+      app:
+        type: "str"
+        required: true
+        description:
+          - "Application name to deploy"
+          - "Check application names in environments/<env_code>/hosts files"

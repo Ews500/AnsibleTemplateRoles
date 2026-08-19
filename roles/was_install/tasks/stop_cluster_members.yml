@@ -1,0 +1,69 @@
+# TASKS to be executed on dmgr host
+- name: Stop cluster members only on one node
+  delegate_to: "{{ dmgr_host }}"
+  run_once: true
+  block:
+    - name: Create Jython script to list cluster members on a node
+      ansible.builtin.template:
+        src: "{{ tpl_ls }}"
+        dest: "/tmp/{{ (inventory_hostname | split('.'))[0] }}_{{ rsp_ls_file }}"
+        mode: '0644'
+
+    - name: List cluster member servers hosted on target node
+      ansible.builtin.command: >
+        {{ target_group_vars.was_path }}/profiles/{{ target_group_vars.dmgr_profile }}/bin/wsadmin.sh -con soap -lang jython
+        -f /tmp/{{ (inventory_hostname | split('.'))[0] }}_{{ rsp_ls_file }} {{ target_group_vars.target_node_name }}
+      register: members_out
+      changed_when: false
+      failed_when: members_out.rc != 0
+
+    - name: Set cluster members list fact (raw)
+      ansible.builtin.set_fact:
+        node_cluster_members: >-
+          {{
+            members_out.stdout_lines
+            | reject('equalto', '')
+            | reject('match', '^WASX[0-9]+[IEW]:')
+            | reject('match', '^Clusters with members on node:')
+            | list
+          }}
+
+    - name: Build clean server list to stop (robust)
+      ansible.builtin.set_fact:
+        node_servers_to_stop: >-
+          {{
+            node_cluster_members
+            | map('regex_replace', '^[^A-Za-z0-9]+', '')
+            | map('trim')
+            | reject('equalto', '')
+            | unique
+            | list
+          }}
+
+    - name: Stop ONLY those members on that node (wsadmin-safe one-liner)
+      ansible.builtin.command:
+        argv:
+          - "{{ target_group_vars.was_path }}/profiles/{{ target_group_vars.dmgr_profile }}/bin/wsadmin.sh"
+          - -conntype
+          - SOAP
+          - -lang
+          - jython
+          - -c
+          - >-
+              import sys;
+              node={{ target_group_vars.target_node_name | to_json }};
+              srv={{ item | to_json }};
+              s=AdminControl.queryNames('WebSphere:type=Server,node='+node+',name='+srv+',*');
+              sys.stdout.write('Stopping '+node+'/'+srv+' -> '+str(s)+'\n');
+              s and AdminControl.invoke(s,'stop') or sys.stdout.write('Already stopped or not running: '+node+'/'+srv+'\n')
+      loop: "{{ node_servers_to_stop }}"
+      when: node_servers_to_stop | length > 0
+      register: stop_members_result
+      changed_when: "'Stopping ' in (stop_members_result.stdout | default(''))"
+      failed_when: stop_members_result.rc != 0 or
+                  ('SyntaxError' in (stop_members_result.stderr | default('')))
+
+    - name: Remove any old scripts (avoid stale /tmp confusion)
+      ansible.builtin.file:
+        path: "/tmp/{{ (inventory_hostname | split('.'))[0] }}_{{ rsp_ls_file }}"
+        state: absent

@@ -1,0 +1,21 @@
+- name: Create JAAS-J2c for Datasource for Cluster on Deployment Manager
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  block:
+    - name: Create JAASAuthData
+      no_log: true # To avoid printing user/pw in output
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP -c "
+        AdminTask.createAuthDataEntry('[-alias \"{{ jdbc_datasource.alias }}\"
+        -user \"{{ jdbc_datasource.user }}\" -password \"{{ jdbc_datasource.password }}\"
+        -description \"{{ jdbc_datasource.description }}\"]');
+        AdminConfig.save()"
+      changed_when: jaas_auth_creation.rc == 0
+      failed_when: jaas_auth_creation.rc != 0 and 'A duplicate alias name exists' not in jaas_auth_creation.stdout
+      register: jaas_auth_creation
+
+    - name: Debug JAASAuthData creation
+      no_log: true # To avoid printing user/pw in output
+      ansible.builtin.debug:
+        msg: "JAASAuthData for {{ jdbc_datasource.alias }}: {{ jaas_auth_creation.stdout }}"
+      when: jaas_auth_creation is defined

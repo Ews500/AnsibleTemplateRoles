@@ -1,0 +1,128 @@
+- name: Fail if this role is run for a group other than 'ihs'
+  ansible.builtin.fail:
+    msg: "Role 'http_server_install' should only be run when target_group is 'ihs'. Current value: {{ target_group }}"
+  when: target_group != 'ihs'
+
+- name: Select Variable for Installing WebSphere Web Server, Plug-ins and Customization Tools
+  tags: ihs_install
+  become: true
+  become_user: "webadmn"
+  vars:
+    target_group_vars: >-
+      {{ ihs_vars if target_group in ['ihs'] }}
+    ihs_fixpack_q: "([?release=='{{ ihs_vars.base_release }}'])[0].fixpacks[?state=='active' && id=='{{ ihsplg_vars.target_fixpack }}'].version"
+    ihs_filename_q: "([?release=='{{ ihs_vars.base_release }}'])[0].fixpacks[?state=='active' && id=='{{ ihsplg_vars.target_fixpack }}'].file_name"
+
+    ihs_wctfixpack_q: "([?release=='{{ ihs_vars.base_release }}'])[0].fixpacks[?state=='active' && id=='{{ ihswct_vars.target_fixpack }}'].version"
+    ihs_wctfilename_q: "([?release=='{{ ihs_vars.base_release }}'])[0].fixpacks[?state=='active' && id=='{{ ihswct_vars.target_fixpack }}'].file_name"
+
+    java_fixpack_q: "([?release=='{{ java_vars.target_release }}'])[0].fixpacks[?state=='active' && id=='{{ java_vars.target_fixpack }}'].version"
+    java_filename_q: "([?release=='{{ java_vars.target_release }}'])[0].fixpacks[?state=='active' && id=='{{ java_vars.target_fixpack }}'].file_name"
+  block:
+    - name: Print target_group_vars variable
+      ansible.builtin.debug:
+        msg: "{{ target_group_vars }}"
+
+    - name: Is IIM installed?
+      ansible.builtin.command:
+        cmd: egrep {{ iim_product_id }} {{ iim_data_location }}/installed.xml
+      register: iim_already_installed
+      changed_when: false
+      failed_when: iim_already_installed.rc != 0
+
+## WebServer Check
+
+    - name: Is HTTP Server already installed?
+      ansible.builtin.command:
+        cmd: egrep {{ target_group_vars.ihs_offering_id }} {{ iim_data_location }}/installed.xml
+      register: ihs_already_installed
+      changed_when: false
+      failed_when: false # Don't fail if ihs is not installed
+
+    - name: Is Fixpack version already installed?
+      ansible.builtin.shell:
+        cmd: "set -o pipefail && {{ target_group_vars.ihs_path }}/bin/versionInfo.sh | grep '{{ ihs_plg_releases | json_query(ihs_fixpack_q) | join(' ') }}'"
+      when: ihs_already_installed.rc == 0 # ihs product is installed
+      register: fixpack_already_installed
+      changed_when: false
+      failed_when: false # Don't fail if ihs is not patched
+
+## Plug Check
+
+    - name: Is Web Server Plug-ins already installed?
+      ansible.builtin.command:
+        cmd: egrep {{ ihs_plg_vars.offering_id }} {{ iim_data_location }}/installed.xml
+      register: ihs_plg_already_installed
+      changed_when: false
+      failed_when: false # Don't fail if Plug-ins is not installed
+
+    - name: Is Plug-ins Fixpack version already installed?
+      ansible.builtin.shell:
+        cmd: "set -o pipefail && {{ ihs_plg_vars.ihs_plg_path }}/bin/versionInfo.sh | grep '{{ ihs_plg_releases | json_query(ihs_fixpack_q) | join(' ') }}'"
+      when: ihs_plg_already_installed.rc == 0 # ihs Plugin product is installed
+      register: plg_fixpack_already_installed
+      changed_when: false
+      failed_when: false # Don't fail if Plug-ins is not patched
+
+## WCT Tool Check
+
+    - name: Is Web Server Cutomizarion Tool already installed?
+      ansible.builtin.command:
+        cmd: egrep {{ ihs_wct_vars.offering_id }} {{ iim_data_location }}/installed.xml
+      register: ihs_wct_already_installed
+      changed_when: false
+      failed_when: false # Don't fail if Plug-ins is not installed
+
+    - name: Is WCT Fixpack version already installed?
+      ansible.builtin.shell:
+        cmd: "set -o pipefail && {{ ihs_wct_vars.ihs_wct_path }}/bin/versionInfo.sh | grep '{{ ihs_wct_releases | json_query(ihs_wctfixpack_q) | join(' ') }}'"
+      when: ihs_wct_already_installed.rc == 0 # ihs Plugin product is installed
+      register: wct_fixpack_already_installed
+      changed_when: false
+      failed_when: false # Don't fail if Plug-ins is not patched
+
+    - name: Set filename and version facts
+      ansible.builtin.set_fact:
+## IHS
+        ihs_filename: "{{ target_group_vars.ihs_files.file_name if ihs_already_installed.rc != 0 else (ihs_plg_releases | json_query(ihs_filename_q)) | join(' ') }}" # noqa yaml[line-length]
+        ihs_version: "{{ target_group_vars.base_version if ihs_already_installed.rc != 0 else (ihs_plg_releases | json_query(ihs_fixpack_q)) | join(' ') }}" # noqa yaml[line-length]
+## Plugin
+        ihs_plg_filename: "{{ ihs_plg_vars.ihs_plg_files.file_name if ihs_plg_already_installed.rc != 0 else (ihs_plg_releases | json_query(ihs_filename_q)) | join(' ') }}" # noqa yaml[line-length]
+        ihs_plg_version: "{{ target_group_vars.base_version if ihs_plg_already_installed.rc != 0 else (ihs_plg_releases | json_query(ihs_fixpack_q)) | join(' ') }}" # noqa yaml[line-length]
+## WCT
+        ihs_wct_filename: "{{ ihs_wct_vars.ihs_wct_files.file_name if ihs_wct_already_installed.rc != 0 else (ihs_wct_releases | json_query(ihs_wctfilename_q)) | join(' ') }}" # noqa yaml[line-length]
+        ihs_wct_version: "{{ target_group_vars.base_version if ihs_wct_already_installed.rc != 0 else (ihs_wct_releases | json_query(ihs_wctfixpack_q)) | join(' ') }}" # noqa yaml[line-length]
+
+## Java SDK
+        java_version: "{{ java_vars.base_version if ihs_wct_already_installed.rc != 0 else (java_releases | json_query(java_fixpack_q)) | join(' ') }}"
+        java_filename: "{{ java_vars.file_name if ihs_wct_already_installed.rc != 0 else (java_releases | json_query(java_filename_q)) | join(' ') }}"
+
+## setup repo directories
+        ihs_bin_dir: "{{ binary_dirs.ihs if ihs_already_installed.rc != 0 else binary_dirs.ihs_plug_fixpacks }}"
+        ihs_plg_bin_dir: "{{ binary_dirs.ihs_plugins if ihs_plg_already_installed.rc != 0 else binary_dirs.ihs_plug_fixpacks }}"
+        ihs_wct_bin_dir: "{{ binary_dirs.ihs_wct if ihs_wct_already_installed.rc != 0 else binary_dirs.ihs_wct_fixpacks }}"
+        java_bin_dir: "{{ binary_dirs.java_sdk if ihs_already_installed.rc != 0 else binary_dirs.java_sdk_fixpacks }}"
+
+    # --------------------------------------------------------
+    # BLOCK: Install HTTP Server Tasks
+    # --------------------------------------------------------
+    - name: IBM HTTP Server Plug-ins and WCT Installation
+      tags: install_ihs_standalone
+      when: target_group == "ihs"
+      block:
+        - name: Stop WebServer Services
+          tags: stop_ihs
+          ansible.builtin.include_tasks: stop_ihs_services.yml
+          when: (ihs_already_installed.rc == 0 and fixpack_already_installed is defined and fixpack_already_installed.rc != 0)
+          # (ihs installed and fixpack NOT installed)
+
+        - name: Install Web Server, plugin and WCT Tools
+          ansible.builtin.include_tasks: install_ihs.yml
+          when: (ihs_already_installed.rc != 0) or (ihs_already_installed.rc == 0 and fixpack_already_installed is defined and fixpack_already_installed.rc != 0 ) or (ihs_wct_already_installed.rc != 0) or (ihs_wct_already_installed.rc == 0 and wct_fixpack_already_installed is defined and wct_fixpack_already_installed.rc != 0 ) # noqa yaml[line-length]
+          # (ihs NOT installed) or (ihs installed and fixpack NOT installed)
+
+        - name: Start WebServer Services
+          tags: start_ihs
+          ansible.builtin.include_tasks: start_ihs_services.yml
+          when: (ihs_already_installed.rc == 0 and fixpack_already_installed is defined and fixpack_already_installed.rc != 0)
+          # (ihs installed and fixpack NOT installed)

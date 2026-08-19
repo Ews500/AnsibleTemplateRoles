@@ -1,0 +1,242 @@
+# update_j2c.jython
+#
+# JAAS-J2C alias assignment for primary + report DataSources
+# on all members of a given cluster.
+#
+# Alias naming convention:
+#   Primary DB alias : <primary_dbenv>_<domain>_<username>
+#       FATW -> symw_bip_*
+#       FATF -> symf_bip_*
+#       BAT  -> symg_bip_*
+#
+#   Report DB alias  : <report_ds_name>_<domain>_<username>
+#       FATW -> REPW_bip_*
+#       FATF -> REPF_bip_*
+#       BAT  -> REPF_bip_*
+#
+# Report DS (REPW/REPF) may or may not exist for a given app.
+#
+# Run:
+#   wsadmin.sh -lang jython -conntype SOAP -f update_j2c.jython
+#
+# -------------------------------------------------------------------
+# CONFIG
+# -------------------------------------------------------------------
+
+# Cluster name to process
+scope_node = '{{ node_name }}'
+scope_server = '{{ env_vars.server_name }}'
+cluster_name = '{{ env_vars.cluster_name }}'
+env_code = '{{ env_code }}'
+domain = '{{ app_vars.domain }}'
+
+# Map env_code -> primary dbenv prefix (for primary DB alias)
+env_to_primary_dbenv = {
+    'FATW': 'symw',
+    'FATF': 'symf',
+    'BAT':  'symg',
+}
+
+# Per-env DataSource names (primary + report)
+primary_ds_by_env = {
+    'FATW': 'SYMW',
+    'FATF': 'SYMF',
+    'BAT':  'SYMG',
+}
+
+report_ds_by_env = {
+    'FATW': 'REPW',
+    'FATF': 'REPF',
+    'BAT':  'REPF',
+}
+
+if env_code not in env_to_primary_dbenv:
+    print 'ERROR: Unknown env_code: %s (expected one of %s)' % (env_code, env_to_primary_dbenv.keys())
+    raise SystemExit(1)
+
+primary_dbenv    = env_to_primary_dbenv[env_code]
+primary_ds_name  = primary_ds_by_env.get(env_code)
+report_ds_name   = report_ds_by_env.get(env_code)  # may be None
+
+primary_alias_prefix = '%s_%s_' % (primary_dbenv, domain)   # e.g. symw_bip_
+# Report alias prefix is based on DS name itself, e.g. REPW_bip_
+report_alias_prefix  = None
+if report_ds_name is not None:
+    report_alias_prefix = '%s_%s_' % (report_ds_name, domain)
+
+print 'INFO: Cluster             : %s' % cluster_name
+print 'INFO: Environment code    : %s' % env_code
+print 'INFO: Primary dbenv       : %s' % primary_dbenv
+print 'INFO: Primary DS name     : %s' % primary_ds_name
+print 'INFO: Report DS name      : %s' % (report_ds_name if report_ds_name else 'NONE')
+print 'INFO: Primary alias prefix: %s' % primary_alias_prefix
+print 'INFO: Report alias prefix : %s' % (report_alias_prefix if report_alias_prefix else 'NONE')
+
+# -------------------------------------------------------------------
+# Helpers
+# -------------------------------------------------------------------
+
+def _split_lines(s):
+    if s is None:
+        return []
+    s = str(s).strip()
+    if s == '':
+        return []
+    return s.splitlines()
+
+def _find_alias_for_prefix(alias_list, prefix):
+    """Case-insensitive match of aliases starting with the given prefix."""
+    if prefix is None:
+        return None
+    prefix_lc = prefix.lower()
+    for alias in alias_list:
+        if alias is None:
+            continue
+        if alias.lower().startswith(prefix_lc):
+            return alias
+    return None
+
+def update_datasources_for_server(node_name, server_name, alias_list,
+                                  primary_ds_name, report_ds_name,
+                                  primary_alias_prefix, report_alias_prefix):
+    print '------------------------------------------------------------'
+    print 'INFO: Processing server: %s on node: %s' % (server_name, node_name)
+
+    server_id = AdminConfig.getid('/Node:' + node_name + '/Server:' + server_name + '/')
+    if server_id == '':
+        print 'ERROR: Scope not found for Node=%s, Server=%s' % (node_name, server_name)
+        return False
+
+    print 'DEBUG: Found scope: ' + server_id
+
+    all_ds_ids = _split_lines(AdminConfig.list('DataSource', server_id))
+    if len(all_ds_ids) == 0:
+        print 'DEBUG: No DataSources found under this server.'
+        return False
+
+    ds_info = []  # list of (configId, name, jndiName, role)
+
+    # Collect relevant DSs (primary + report), skip system timer DS
+    for ds in all_ds_ids:
+        ds_name   = AdminConfig.showAttribute(ds, 'name')
+        jndi_name = AdminConfig.showAttribute(ds, 'jndiName')
+
+        # Skip system EJB timer DS
+        if jndi_name == 'jdbc/DefaultEJBTimerDataSource':
+            print 'INFO: Skipping system DataSource: %s (JNDI=%s)' % (ds_name, jndi_name)
+            continue
+
+        role = None
+        if ds_name == primary_ds_name:
+            role = 'primary'
+        elif report_ds_name is not None and ds_name == report_ds_name:
+            role = 'report'
+        else:
+            print 'INFO: Skipping DataSource "%s" (not primary/report for this env)' % ds_name
+            continue
+
+        ds_info.append((ds, ds_name, jndi_name, role))
+
+    if len(ds_info) == 0:
+        print 'INFO: No primary/report DataSources to update for server ' + server_name
+        return False
+
+    print 'DEBUG: Target DataSources on %s:' % server_name
+    for ds, ds_name, jndi_name, role in ds_info:
+        print '  - %s (JNDI=%s, role=%s)' % (ds_name, jndi_name, role)
+
+    updated = False
+
+    # For each DS, pick alias according to its role
+    for ds, ds_name, jndi_name, role in ds_info:
+        if role == 'primary':
+            alias = _find_alias_for_prefix(alias_list, primary_alias_prefix)
+            if alias is None:
+                print 'WARN: No JAAS alias found for PRIMARY DS "%s" with prefix "%s"' % (
+                    ds_name, primary_alias_prefix
+                )
+                continue
+        elif role == 'report':
+            alias = _find_alias_for_prefix(alias_list, report_alias_prefix)
+            if alias is None:
+                print 'WARN: No JAAS alias found for REPORT DS "%s" with prefix "%s"' % (
+                    ds_name, report_alias_prefix
+                )
+                continue
+        else:
+            # Should not happen
+            print 'WARN: Unknown role "%s" for DS "%s", skipping' % (role, ds_name)
+            continue
+
+        print 'DEBUG: Setting authDataAlias="%s" for DataSource "%s" (JNDI=%s, role=%s) on server %s' % (
+            alias, ds_name, jndi_name, role, server_name
+        )
+        AdminConfig.modify(ds, [['authDataAlias', alias]])
+        updated = True
+
+    return updated
+
+# -------------------------------------------------------------------
+# MAIN: process all members of the cluster
+# -------------------------------------------------------------------
+
+cluster_id = AdminConfig.getid('/ServerCluster:' + cluster_name + '/')
+if cluster_id == '':
+    print 'ERROR: Cluster not found: ' + cluster_name
+    raise SystemExit(1)
+
+print 'DEBUG: Found cluster: ' + cluster_id
+
+member_ids = _split_lines(AdminConfig.list('ClusterMember', cluster_id))
+if len(member_ids) == 0:
+    print 'ERROR: No ClusterMember objects found for cluster: ' + cluster_name
+    raise SystemExit(1)
+
+print 'DEBUG: Cluster members:'
+for mid in member_ids:
+    print '  - ' + mid
+
+# Discover all JAASAuthData aliases once (global)
+all_auth_ids = _split_lines(AdminConfig.list('JAASAuthData'))
+alias_list = []
+for auth in all_auth_ids:
+    alias = AdminConfig.showAttribute(auth, 'alias')
+    if alias is not None:
+        alias_list.append(alias)
+
+print 'DEBUG: Found %d JAASAuthData aliases total' % len(alias_list)
+for a in alias_list:
+    print '  * ' + a
+
+any_updated = False
+
+# Process each cluster member (node/server)
+for mid in member_ids:
+    node_name   = AdminConfig.showAttribute(mid, 'nodeName')
+    member_name = AdminConfig.showAttribute(mid, 'memberName')
+
+    # Compatibility fallback (older configs)
+    if member_name is None or member_name == '':
+        member_name = AdminConfig.showAttribute(mid, 'name')
+
+    if node_name is None or member_name is None:
+        print 'WARN: Could not resolve nodeName/memberName for ClusterMember: ' + mid
+        continue
+
+    changed = update_datasources_for_server(
+        node_name,
+        member_name,
+        alias_list,
+        primary_ds_name,
+        report_ds_name,
+        primary_alias_prefix,
+        report_alias_prefix
+    )
+    if changed:
+        any_updated = True
+
+if any_updated:
+    AdminConfig.save()
+    print 'SUCCESS: Alias updated for one or more DataSources in cluster ' + cluster_name
+else:
+    print 'INFO: No DataSources updated for cluster ' + cluster_name

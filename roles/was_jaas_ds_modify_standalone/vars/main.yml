@@ -1,0 +1,12 @@
+---
+profile_dir: "{{ was_path }}/profiles/{{ env_vars.profile_name }}"
+jdbc_provider_list:
+  - name: "Oracle JDBC Driver"
+    provider_type: "Oracle JDBC Driver"
+    db_type: "Oracle"
+    impl_type: "Connection pool data source"
+    impl_class_name: "oracle.jdbc.pool.OracleConnectionPoolDataSource"
+    classpath: "[${ORACLE_JDBC_DRIVER_PATH}/ojdbc8.jar]"
+    native_path: "/app/OracleDriver"
+    was_var_name: "ORACLE_JDBC_DRIVER_PATH"
+    was_var_desc: "Oracle JDBC driver path"

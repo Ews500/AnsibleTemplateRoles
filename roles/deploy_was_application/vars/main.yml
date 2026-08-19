@@ -1,0 +1,23 @@
+---
+
+standalone_vars:
+  stop_script_name: "stop_app_standalone.py"
+  uninstall_script_name: "uninstall_app_standalone.py"
+  install_script_name: "install_app_standalone.py"
+  start_script_name: "start_app_standalone.py"
+  was_soap_port: "{{ env_vars.was_soap_port }}"
+  profile_name: "{{ env_vars.profile_name }}"
+  deployable_path: "/devops_deploy/{{ env_vars.profile_name }}"
+  wsadmin_path: "/app/WAS/profiles/{{ env_vars.profile_name }}/bin"
+nd_vars:
+  stop_script_name: "stop_app_nd.py"
+  uninstall_script_name: "uninstall_app_nd.py"
+  install_script_name: "install_app_nd.py"
+  start_script_name: "start_app_nd.py"
+  was_soap_port: "{{ env_vars.dmgr_soap_port | default('8879') }}"
+  profile_name: Dmgr01
+  deployable_path: "/devops_deploy/{{ env_vars.server_name }}"
+  wsadmin_path: "/app/WASND/profiles/Dmgr01/bin"
+
+server_mapping_test: "WebSphere:cell=wascell,node=ltwas101ihsNode01,server=webserver1+WebSphere:cell=wascell,node=ltwas102ihsNode01,server=webserver1"
+server_mapping_prod: "WebSphere:cell=wascell,node=lpwas101ihsNode01,server=webserver1+WebSphere:cell=wascell,node=lpwas102ihsNode01,server=webserver1"

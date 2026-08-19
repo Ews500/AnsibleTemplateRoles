@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Root>
+	<template id="requestApproval">
+		<emailFrom>Cabrillo@atradius.com</emailFrom>
+		<emailTo>{{ env_vars.email_to }}</emailTo>
+		<subject>Request for approval ({{ env_vars.mail_subject_env }})</subject>
+		<body>
+		Hello,
+
+		User [{0}] has raised an Agreement approval request for Agreement "[{1}]" on [{2}].
+		Please login to Treaty Management application and approve/reject the Agreement.
+
+		Regards,
+		TMT
+
+		PS: This is a system generated mail. Please do not reply to this mail.
+		</body>
+	</template>
+	<template id="approval">
+		<emailFrom>Cabrillo@atradius.com</emailFrom>
+		<emailTo>{{ env_vars.email_to }}</emailTo>
+		<subject>Processed request for approval ({{ env_vars.mail_subject_env }})</subject>
+		<body>
+		Hello,
+
+		The status of the Agreement "[{0}]" requested for approval on [{1}]  has been changed to [{2}] with the following comments.
+		Comments: [{3}]
+
+		Please login to Treaty Management application and review the status of the agreement.
+
+		Regards,
+		TMT
+
+		PS: This is a system generated mail. Please do not reply to this mail.
+		</body>
+	</template>
+	<template id="requestTreaty">
+		<emailFrom>Cabrillo@atradius.com</emailFrom>
+		<emailTo>{{ env_vars.email_to }}</emailTo>
+		<subject>Request for approval ({{ env_vars.mail_subject_env }})</subject>
+		<body>
+		Hello,
+
+		User [{0}] has raised an approval request for Agreement Grouping "[{1}]" on [{2}].
+		Please login to Treaty Management application and approve/reject the Agreement Grouping.
+
+		Regards,
+		TMT
+
+		PS: This is a system generated mail. Please do not reply to this mail.
+		</body>
+	</template>
+	<template id="approvalTreaty">
+		<emailFrom>Cabrillo@atradius.com</emailFrom>
+		<emailTo>{{ env_vars.email_to }}</emailTo>
+		<subject>Processed request for approval ({{ env_vars.mail_subject_env }})</subject>
+		<body>
+		Hello,
+
+		The status of the Agreement Grouping "[{0}]" requested for approval on [{1}] has been changed to [{2}] with the following comments.
+		Comments: [{3}]
+
+		Please login to Treaty Management application and review the status of the agreement grouping.
+
+		Regards,
+		TMT
+
+		PS: This is a system generated mail. Please do not reply to this mail.
+		</body>
+	</template>
+	<template id="requestTreatyYear">
+		<emailFrom>Cabrillo@atradius.com</emailFrom>
+		<emailTo>{{ env_vars.email_to }}</emailTo>
+		<subject>Request for approval ({{ env_vars.mail_subject_env }})</subject>
+		<body>
+		Hello,
+
+		User [{0}] has raised an yearly approval request for year [{1}] for Agreement Grouping "[{2}]" on [{3}].
+		Please login to Treaty Management application and approve/reject the Agreement Grouping yearly request.
+
+		Regards,
+		TMT
+
+		PS: This is a system generated mail. Please do not reply to this mail.
+		</body>
+	</template>
+	<template id="approvalTreatyYear">
+		<emailFrom>Cabrillo@atradius.com</emailFrom>
+		<emailTo>{{ env_vars.email_to }}</emailTo>
+		<subject>Processed request for approval ({{ env_vars.mail_subject_env }})</subject>
+		<body>
+		Hello,
+
+		The status of the [{0}] yearly approval request for Agreement Grouping "[{1}]" has been changed to [{2}] on [{3}] with the following comments.
+		Comments: [{4}]
+
+		Please login to Treaty Management application and review the status of the agreement grouping.
+
+		Regards,
+		TMT
+
+		PS: This is a system generated mail. Please do not reply to this mail.
+		</body>
+	</template>
+
+	<template id="changeAgreementStatus">
+		<emailFrom>Cabrillo@atradius.com</emailFrom>
+		<emailTo>{{ env_vars.email_to }}</emailTo>
+		<subject>Modified Agreement Status ({{ env_vars.mail_subject_env }})</subject>
+		<body>
+		Hello,
+
+		The status of the Agreement "[{0}]" has been changed to [{1}] on [{2}] with the following comments.
+		Comments: [{3}]
+
+		The affected Agreement Grouping/s are: [{4}].
+
+		The status of the affected Agreement Grouping Yearly Requests have been changed to DRAFT.
+
+		Please login to Treaty Management application and review the status of the agreement.
+
+		Regards,
+		TMT
+
+		PS: This is a system generated mail. Please do not reply to this mail.
+		</body>
+	</template>
+    <template id="OperatingCycleVerified">
+        <emailFrom>Cabrillo@atradius.com</emailFrom>
+        <emailTo>{{ env_vars.email_to }}</emailTo>
+        <subject>Operating Cycle Verified ({{ env_vars.mail_subject_env }})</subject>
+        <body>
+        Hello,
+
+        The Operating Cycle "[{0}]" has been Verified :
+        Verification Date :[{1}]
+        Verification Comments: [{2}]
+        Verified By : [{3}]
+
+		No adjustment operating cycle have been created for this operating cycle.
+
+        Regards,
+        RI
+
+        PS: This is a system generated mail. Please do not reply to this mail.
+        </body>
+    </template>
+    <template id="AjustmentCycleOperatingCycle">
+        <emailFrom>Cabrillo@atradius.com</emailFrom>
+        <emailTo>{{ env_vars.email_to }}</emailTo>
+        <subject>Operating Cycle Verified ({{ env_vars.mail_subject_env }})</subject>
+        <body>
+        Hello,
+
+        The Operating Cycle "[{0}]" has been Verified :
+        Verification Date :[{1}]
+        Verification Comments: [{2}]
+        Verified By : [{3}]
+
+		An Adjustment Operating Cycle "[{4}]" had been created .
+		Start Date: [{5}]
+		End Date: [{6}]
+
+        Regards,
+        RI
+
+        PS: This is a system generated mail. Please do not reply to this mail.
+        </body>
+    </template>
+    <template id="ApproveOperatingCycle">
+        <emailFrom>Cabrillo@atradius.com</emailFrom>
+        <emailTo>{{ env_vars.email_to }}</emailTo>
+        <subject>Operating Cycle Approved ({{ env_vars.mail_subject_env }})</subject>
+        <body>
+        Hello,
+
+        The status of Operating Cycle "[{0}]" has been changed :
+        Date :[{1}]
+        Status: [{2}]
+        Approval Comments: [{3}]
+        Approver : [{4}]
+
+        Regards,
+        RI
+
+        PS: This is a system generated mail. Please do not reply to this mail.
+        </body>
+    </template>
+
+
+    <template id="grossUploadCompletion">
+        <emailFrom>Cabrillo@atradius.com</emailFrom>
+        <emailTo>{{ env_vars.email_to }}</emailTo>
+        <subject>Gross Upload Completion Confirmed ({{ env_vars.mail_subject_env }})</subject>
+        <body>
+        Hello,
+
+        User [{0}] has confirmed the gross upload completion for the branches "[{1}]"
+        for operating cycle "[{2}]"  on "[{3}]"
+
+        Regards,
+        RI
+
+        PS: This is a system generated mail. Please do not reply to this mail.
+        </body>
+    </template>
+
+    <template id="StartJournalTransfer">
+        <emailFrom>Cabrillo@atradius.com</emailFrom>
+        <emailTo>{{ env_vars.email_to_ops if (env_code == 'PROD')  else env_vars.email_to }}</emailTo>
+        <subject>Request for starting the Batch Job ({{ env_vars.mail_subject_env }})</subject>
+        <body>
+        Hi Team,
+
+            Operating Cycle "[{0}]" is approved on [{1}].
+
+        User [{2}] requests you to force on {{ env_vars.schedule }} schedule which contains the following batch jobs as mentioned below:
+
+        a) Cabrillo Booking Job
+        b) CGLI - StartJrnlTransfer (for sourceName=REINS)
+        c) CGLI - StartJrnlValidation
+        d) CGLI - StartJrnlTransfer2Prudence
+
+        Please see {{ env_vars.document }} for instructions.
+
+        Regards,
+        RI
+
+        PS: This is a system generated mail. Please do not reply to this mail.
+        </body>
+    </template>
+
+</Root>

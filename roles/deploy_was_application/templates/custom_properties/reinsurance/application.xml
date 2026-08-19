@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE application PUBLIC "-//Sun Microsystems, Inc.//DTD J2EE Application 1.3//EN" "http://java.sun.com/dtd/application_1_3.dtd">
+<application id="Application_1224153167277">
+  <display-name>reinsurance-tool-ear</display-name>
+  <description>Cabrillo Highway Reinsurance Tool entreprise archive</description>
+  <module>
+    <web>
+        <web-uri>{{ app_vars.war_name }}</web-uri>
+        <context-root>{{ env_vars.app_context }}</context-root>
+    </web>
+  </module>
+  
+  <security-role>
+         <description>All Authenticated users role.</description>
+         <role-name>All Role</role-name>
+      </security-role>
+
+</application>

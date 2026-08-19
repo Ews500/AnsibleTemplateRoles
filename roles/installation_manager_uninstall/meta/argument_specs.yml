@@ -1,0 +1,37 @@
+# roles/installation_manager_uninstall/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/installation_manager_uninstall/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the installation_manager_uninstall role
+    description:
+      - This is the main entrypoint for the C(installation_manager_uninstall) role.
+      - Completely removes IBM Installation Manager and all associated directories.
+      - Performs recursive deletion of installation, data, and shared directories.
+      - This is a destructive operation that cannot be undone.
+      - Ensure all IBM products are uninstalled before running this role.
+    version_added: 1.0.0
+    author:
+      - Manbir Singh (@GBMSINGH)
+    options:
+      iim_install_location:
+        type: "str"
+        required: false
+        default: "/app/InstallationManager"
+        description:
+          - "IBM Installation Manager binary installation directory"
+          - "This directory will be completely removed"
+      iim_data_location:
+        type: "str"
+        required: false
+        default: "/app/InstallationManagerData"
+        description:
+          - "IBM Installation Manager data directory"
+          - "Contains installation registry and metadata"
+      imshared_location:
+        type: "str"
+        required: false
+        default: "/app/IMShared"
+        description:
+          - "IBM Installation Manager shared resources directory"
+          - "Contains shared libraries and components"

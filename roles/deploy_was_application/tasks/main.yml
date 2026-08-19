@@ -1,0 +1,44 @@
+---
+
+- name: Print app variables
+  run_once: true
+  ansible.builtin.debug:
+    msg: "{{ app_vars }}"
+
+- name: Assert that config_prop_dir exists
+  run_once: true
+  ansible.builtin.assert:
+    that:
+      - "app_vars.config_prop_files is defined"
+    fail_msg: "Deployment config properties are not defined"
+    success_msg: "Deployment config properties are defined"
+
+- name: Print host variables
+  ansible.builtin.debug:
+    msg: "was_username - {{ was_username }}, was_path - {{ was_path }}"
+
+- name: Print app_options variable
+  run_once: true
+  ansible.builtin.debug:
+    msg: "{{ app_vars.app_options | default(app_defaults.app_options) }}"
+
+- name: Check custom properties templates exists
+  become: false
+  delegate_to: localhost
+  ansible.builtin.stat:
+    path: "{{ playbook_dir }}/roles/deploy_was_application/templates/custom_properties/{{ app }}"
+  register: custom_props_st
+
+- name: Deploy standalone application
+  tags: deployment
+  ansible.builtin.include_tasks: deploy_app.yml
+  when: "env_vars.dmgr_host is not defined"
+
+- name: Deploy cluster application
+  tags: deployment
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  when: "env_vars.dmgr_host is defined"
+  block:
+    - name: Deploy cluster application
+      ansible.builtin.include_tasks: deploy_app.yml

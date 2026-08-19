@@ -1,0 +1,24 @@
+# roles/was_install/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/was_install/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the was_install role
+    description:
+      - This is the main entrypoint for the C(was_install) role.
+      - First it loads the variables for the WAS and JDK versions and fixpacks to install.
+      - Then, C(target_group_vars), C(was_fixpack_q), C(was_filename_q), C(java_fixpack_q), C(java_filename_q) are printed in the output.
+      - After that it checks whether WAS and its fixpack is installed.
+      - Sets facts based on the the previous checks for the filenames and versions of the software to install.
+      - Based on the C(target group), it determines the installation method (standalone/nd/dmgr).
+    version_added: 1.0.0
+    author:
+      - Manbir Singh (@GBMSINGH)
+    options:
+      target_group:
+        type: "str"
+        required: true
+        choices: ["standalone", "nd", "dmgr"]
+        description:
+          - "Defines the installation type"
+          - "Must be one of: C(standalone), C(nd), or C(dmgr)."

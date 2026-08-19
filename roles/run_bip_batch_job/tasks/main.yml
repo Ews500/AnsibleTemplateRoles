@@ -1,0 +1,60 @@
+---
+
+- name: Run BIP batch job
+  become: true
+  become_user: "{{ was_username }}"
+  delegate_to: "{{ was_bip_batch_host }}"
+  delegate_facts: true
+  block:
+
+    - name: Check wsadmin utility exists
+      ansible.builtin.stat:
+        path: "{{ was_path }}/profiles/{{ profile_name }}/bin/wsadmin.sh"
+      register: wsadmin_st
+
+    - name: Fail if wsadmin utility does not exists
+      ansible.builtin.fail:
+        msg: "{{ was_path }}/profiles/{{ profile_name }}/bin/wsadmin.sh DOES NOT exists"
+      when: not wsadmin_st.stat.exists
+
+    - name: Create temporary directory
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: "{{ mbean_name }}-batch-job-"
+      register: temp_dir
+
+    - name: Copy start_job.py script template
+      ansible.builtin.template:
+        src: start_job.py
+        dest: "{{ temp_dir.path }}/start_job.py"
+        mode: "0600"
+
+    - name: Start job
+      ansible.builtin.command:
+        cmd: "{{ was_path }}/profiles/{{ profile_name }}/bin/wsadmin.sh -conntype soap -host {{ was_host }} -port {{ was_soap_port }} -lang jython -f {{ temp_dir.path }}/start_job.py -tracefile {{ temp_dir.path }}/{{ mbean_name }}.log" # noqa yaml[line-length]
+      register: job_output
+      changed_when: job_output.rc != 0
+      failed_when: job_output.rc != 0
+
+    - name: Job output
+      ansible.builtin.debug:
+        msg: "{{ job_output.stdout }}"
+
+  ## End of block
+  always:
+    - name: Get wsadmin log output (tracefile)
+      ansible.builtin.slurp:
+        src: "{{ temp_dir.path }}/{{ mbean_name }}.log"
+      register: tracefile_output
+      when: temp_dir.path is defined
+
+    - name: Print wsadmin log output (tracefile)
+      ansible.builtin.debug:
+        msg: "{{ tracefile_output.content | b64decode }}"
+      when: temp_dir.path is defined
+
+    - name: Remove tmp dir
+      ansible.builtin.file:
+        state: absent
+        dest: "{{ temp_dir.path }}"
+      when: temp_dir.path is defined

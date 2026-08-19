@@ -1,0 +1,53 @@
+- name: Debug cluster removal state
+  tags: remove_cluster
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  ansible.builtin.debug:
+    msg: >-
+      {{ 'Removing cluster ' + env_vars.cluster_name +
+         (' (empty cluster)' if not (cluster_has_members | default(false)) else ' and its members')
+         if cluster_exists_flag
+         else 'Cluster ' + env_vars.cluster_name + ' does not exist, nothing to remove' }}
+
+- name: Remove Application Cluster
+  tags: remove_cluster
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  when: cluster_exists_flag and (cluster_member_removal.results | default([]) | selectattr('rc', 'equalto', 0) | list | length > 0 or cluster_member_removal.results | default([]) | length == 0) # noqa yaml[line-length]
+  block:
+    - name: Remove Cluster from Deployment Manager
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython
+        -host {{ env_vars.dmgr_host }} -port {{ env_vars.dmgr_soap_port }}
+        -c "AdminTask.deleteCluster('[-clusterName {{ env_vars.cluster_name }} ]');
+        AdminConfig.save();
+        AdminNodeManagement.syncActiveNodes()"
+      register: cluster_removal_output
+      changed_when: "'Cluster {{ env_vars.cluster_name }} deleted' in cluster_removal_output.stdout"
+
+    - name: Get DataReplicationDomain ID for cluster
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP
+        -c "print AdminConfig.getid('/DataReplicationDomain:{{ env_vars.cluster_name }}/')"
+      register: drd_id_output
+      changed_when: false
+      when: cluster_removal_output.stdout is search('Cluster .* deleted')
+
+    - name: Remove DataReplicationDomain
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP
+        -c "AdminConfig.remove('{{ drd_id_output.stdout_lines[-1] }}');
+        AdminConfig.save();
+        AdminNodeManagement.syncActiveNodes()"
+      register: drd_removal_output
+      changed_when: true
+      when: drd_id_output.stdout_lines | length > 0
+
+    - name: Debug DataReplicationDomain removal
+      ansible.builtin.debug:
+        var: drd_removal_output.stdout_lines
+      when: drd_removal_output is defined
+
+    - name: Set cluster_exists_flag after cluster removal
+      ansible.builtin.set_fact:
+        cluster_exists_flag: false

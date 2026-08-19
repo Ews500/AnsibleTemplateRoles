@@ -1,0 +1,43 @@
+- name: Create JAASAuthData
+  no_log: true # To avoid printing user/pw in output
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP -c "
+    AdminTask.createAuthDataEntry('[-alias \"{{ jdbc_datasource.alias }}\"
+    -user \"{{ jdbc_datasource.user }}\" -password \"{{ jdbc_datasource.password }}\"
+    -description \"{{ jdbc_datasource.description }}\"]')"
+  changed_when: jaas_auth_creation.rc == 0
+  failed_when: jaas_auth_creation.rc != 0 and 'A duplicate alias name exists' not in jaas_auth_creation.stdout
+  register: jaas_auth_creation
+
+- name: Get JDBC Provider ID
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -lang jython -c "
+    print AdminConfig.getid('/Server:{{ env_vars.server_name }}/JDBCProvider:{{ jdbc_datasource.provider_name }}/')"
+  register: jdbc_provider_output
+  changed_when: false
+  failed_when: jdbc_provider_output.rc != 0 or jdbc_datasource.provider_name not in jdbc_provider_output.stdout
+
+- name: Set fact for extracted JDBC provider ID
+  ansible.builtin.set_fact:
+    jdbc_provider_id: "{{ jdbc_provider_output.stdout | regex_search(jdbc_datasource.provider_name ~ '.*') | regex_replace('\"$', '') | trim }}" # noqa yaml[line-length]
+
+- name: Create JDBC data source for given JNDI name
+  ansible.builtin.shell: >
+    {{ profile_dir }}/bin/wsadmin.sh -lang jython -c "
+    AdminTask.createDatasource('{{ jdbc_provider_id }}', '[-name \"{{ jdbc_datasource.db_name }}\"
+    -jndiName \"{{ jdbc_datasource.jndi_name }}\"
+    -dataStoreHelperClassName {{ jdbc_datasource.data_store_helper }}
+    -containerManagedPersistence true
+    -componentManagedAuthenticationAlias {{ node_name }}/{{ jdbc_datasource.alias }}
+    -configureResourceProperties [[URL java.lang.String {{ jdbc_datasource.db_url }}]]]'
+    )"
+  changed_when: datasource_creation.rc == 0
+  failed_when: datasource_creation.rc != 0 and 'ADMG0037E' not in datasource_creation.stdout
+  register: datasource_creation
+
+- name: Save the WebSphere configuration
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c 'AdminConfig.save()'"
+  when: datasource_creation is defined
+  changed_when: true
+  register: save_output

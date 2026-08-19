@@ -1,0 +1,12 @@
+- name: Federate Node to Deployment Manager # noqa yaml[line-length]
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/addNode.sh {{ env_vars.dmgr_host }} {{ env_vars.dmgr_soap_port }}
+    -username {{ vault.admin_username }} -password {{ vault.admin_password }}
+  register: node_federation_output
+  changed_when: node_federation_output.rc == 0
+  failed_when: node_federation_output.rc != 0 and 'ADMU0027E' not in node_federation_output.stdout
+
+- name: Node Federation Output
+  ansible.builtin.debug:
+    var: node_federation_output.stdout
+  when: node_federation_output is defined

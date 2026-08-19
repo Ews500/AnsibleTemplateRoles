@@ -1,0 +1,5 @@
+---
+
+java_home: "/app/openjdk/java"
+cacerts_home: "{{ java_home }}/lib/security/cacerts"
+cacerts_dir: "{{ java_home }}/lib/security"

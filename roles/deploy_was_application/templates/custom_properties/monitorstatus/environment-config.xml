@@ -1,0 +1,657 @@
+<env-config xmlns="http://atradius.com/opus/monitoring/env/config">
+
+	<web-resource>
+		<id>URL_WS_CLD</id>
+		<display-name>Credit Limit Service</display-name>
+		<status>false</status>
+		<overall-status>down</overall-status>
+		<remarks>Service is Down</remarks>
+		<child-web-resources>
+			<child-web-resource>
+				<id>URL_WS_CLD_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+			<child-web-resource>
+				<id>URL_WS_CLD_LINK2</id>
+				<display-name>Node 2</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+		</child-web-resources>
+	</web-resource>
+	<web-resource>
+		<id>URL_WS_INVOICE</id>
+		<display-name>Invoice Service</display-name>
+		<status>false</status>
+		<overall-status>down</overall-status>
+		<remarks>Service is Down</remarks>
+		<child-web-resources>
+			<child-web-resource>
+				<id>URL_WS_INVOICE_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+		</child-web-resources>
+	</web-resource>
+	<web-resource>
+		<id>URL_WS_POLICY</id>
+		<display-name>Policy Entity Service</display-name>
+		<status>false</status>
+		<overall-status>down</overall-status>
+		<remarks>Service is Down</remarks>
+		<child-web-resources>
+			<child-web-resource>
+				<id>URL_WS_POLICY_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+		</child-web-resources>
+	</web-resource>
+	<web-resource>
+		<id>URL_WS_DECLARATION</id>
+		<display-name>Declarations Service</display-name>
+		<status>false</status>
+		<overall-status>down</overall-status>
+		<remarks>Service is Down</remarks>
+		<child-web-resources>
+			<child-web-resource>
+				<id>URL_WS_DECLARATION_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+		</child-web-resources>
+	</web-resource>
+	<web-resource>
+		<id>URL_WS_ORG</id>
+		<display-name>Organisation Service</display-name>
+		<status>false</status>
+		<overall-status>down</overall-status>
+		<remarks>Service is Down</remarks>
+		<child-web-resources>
+			<child-web-resource>
+				<id>URL_WS_ORG_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+			<child-web-resource>
+				<id>URL_WS_ORG_LINK2</id>
+				<display-name>Node 2</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+		</child-web-resources>
+	</web-resource>
+	<web-resource>
+		<id>URL_WS_ORBS</id>
+		<display-name>Output Recipient Service</display-name>
+		<status>false</status>
+		<overall-status>down</overall-status>
+		<remarks>Service is Down</remarks>
+		<child-web-resources>
+			<child-web-resource>
+				<id>URL_WS_ORBS_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+		</child-web-resources>
+	</web-resource>
+	<web-resource>
+		<id>URL_WS_OUTPUTWS</id>
+		<display-name>Output Request Service</display-name>
+		<status>false</status>
+		<overall-status>down</overall-status>
+		<remarks>Service is Down</remarks>
+		<child-web-resources>
+			<child-web-resource>
+				<id>URL_WS_OUTPUTWS_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+		</child-web-resources>
+	</web-resource>
+	<web-resource>
+		<id>URL_WS_BUYER</id>
+		<display-name>Buyer Entity Service</display-name>
+		<status>false</status>
+		<overall-status>down</overall-status>
+		<remarks>Service is Down</remarks>
+		<child-web-resources>
+			<child-web-resource>
+				<id>URL_WS_BUYER_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+		</child-web-resources>
+	</web-resource>
+	<web-resource>
+		<id>URL_WS_CLEAR</id>
+		<display-name>Clear Entity Service</display-name>
+		<status>false</status>
+		<overall-status>down</overall-status>
+		<remarks>Service is Down</remarks>
+		<child-web-resources>
+			<child-web-resource>
+				<id>URL_WS_CLEAR_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+		</child-web-resources>
+	</web-resource>
+	<web-resource>
+		<id>URL_WS_TH</id>
+		<display-name>Thunderhead Job API Service</display-name>
+		<status>false</status>
+		<overall-status>down</overall-status>
+		<remarks>Service is Down</remarks>
+		<child-web-resources>
+			<child-web-resource>
+				<id>URL_WS_TH_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+			<child-web-resource>
+				<id>URL_WS_TH_LINK2</id>
+				<display-name>Node 2</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+		</child-web-resources>
+	</web-resource>
+	<web-resource>
+		<id>URL_DSB</id>
+		<display-name>DSB Policy Web Service</display-name>
+		<status>false</status>
+		<overall-status>down</overall-status>
+		<remarks>Service is Down</remarks>
+		<child-web-resources>
+			<child-web-resource>
+				<id>URL_DSB_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+			<child-web-resource>
+				<id>URL_DSB_LINK2</id>
+				<display-name>Node 2</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+		</child-web-resources>
+	</web-resource>
+
+	<web-resource>
+		<id>URL_WS_GEN_OUTPUTWS</id>
+		<display-name>Generic Output Request Service</display-name>
+		<status>false</status>
+		<overall-status>down</overall-status>
+		<remarks>Service is Down</remarks>
+		<child-web-resources>
+			<child-web-resource>
+				<id>URL_WS_GEN_OUTPUTWS_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+		</child-web-resources>
+	</web-resource>
+
+	<web-resource>
+		<id>URL_WS_COMPOSITE</id>
+		<display-name>Composite Service</display-name>
+		<status>false</status>
+		<overall-status>down</overall-status>
+		<remarks>Service is Down</remarks>
+		<child-web-resources>
+			<child-web-resource>
+				<id>URL_WS_COMPOSITE_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+			<child-web-resource>
+				<id>URL_WS_COMPOSITE_LINK2</id>
+				<display-name>Node 2</display-name>
+				<status>false</status>
+				<remarks>Service is Down</remarks>
+			</child-web-resource>
+		</child-web-resources>
+	</web-resource>
+
+	<other-resource>
+		<id>SMTP</id>
+		<name>SMTP</name>
+		<type>SMTP</type>
+		<status>true</status>
+	</other-resource>
+
+	<other-resource>
+		<id>RES_QUEUE</id>
+		<name>Response Topic</name>
+		<type>QUEUE</type>
+		<status>true</status>
+		<overall-status>down</overall-status>
+		<child-other-resources>
+			<child-other-resource>
+				<id>RES_QUEUE_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Topic is not accessible</remarks>
+			</child-other-resource>
+			<child-other-resource>
+				<id>RES_QUEUE_LINK2</id>
+				<display-name>Node 2</display-name>
+				<status>false</status>
+				<remarks>Topic is not accessible</remarks>
+			</child-other-resource>
+		</child-other-resources>
+	</other-resource>
+
+	<other-resource>
+		<id>PROCESSOR</id>
+		<name>Thunderhead Response Processor</name>
+		<type>WEBAPP</type>
+		<status>false</status>
+		<remarks>Resource is Down</remarks>
+		<dependancy>
+			<other-resource>
+				<id>RES_QUEUE</id>
+			</other-resource>
+		</dependancy>
+	</other-resource>
+
+
+	<processing-resource>
+		<id>URL_DP_INVOICE</id>
+		<display-name>Invoice Daemon</display-name>
+		<dependancy>
+			<web-resource>
+				<id>URL_WS_CLD</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_POLICY</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_ORG</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_ORBS</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_DECLARATION</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_INVOICE</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_TH</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_CLEAR</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_COMPOSITE</id>
+			</web-resource>
+		</dependancy>
+		<status>false</status>
+		<message-count>-1</message-count>
+		<remarks>Daemon is Down</remarks>
+		<available>false</available>
+		<overall-status>down</overall-status>
+		<job-name-indicator>IV</job-name-indicator>
+		<job-name-indicator>IN</job-name-indicator>
+		<child-processing-resources>
+			<child-processing-resource>
+				<id>URL_DP_INVOICE_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+			<child-processing-resource>
+				<id>URL_DP_INVOICE_LINK2</id>
+				<display-name>Node 2</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+		</child-processing-resources>
+	</processing-resource>
+
+	<processing-resource>
+		<id>URL_DP_CLD</id>
+		<display-name>Credit Limit Daemon</display-name>
+		<dependancy>
+			<web-resource>
+				<id>URL_WS_CLD</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_POLICY</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_ORG</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_ORBS</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_TH</id>
+			</web-resource>
+		</dependancy>
+		<subprocesses>
+			<id>DocumentProcessingUnit</id>
+			<name>DocumentProcessingUnit</name>
+			<status>true</status>
+		</subprocesses>
+		<subprocesses>
+			<id>RetryProcessingUnit</id>
+			<name>RetryProcessingUnit</name>
+			<status>true</status>
+		</subprocesses>
+		<status>false</status>
+		<overall-health>true</overall-health>
+		<message-count>-1</message-count>
+		<remarks>Daemon is Down</remarks>
+		<available>false</available>
+		<overall-status>down</overall-status>
+		<job-name-indicator>BUC</job-name-indicator>
+		<job-name-indicator>BUL</job-name-indicator>
+		<job-name-indicator>BUR</job-name-indicator>
+		<job-name-indicator>BUE</job-name-indicator>
+		<job-name-indicator>BUN</job-name-indicator>
+		<job-name-indicator>BUI</job-name-indicator>
+		<child-processing-resources>
+			<child-processing-resource>
+				<id>URL_DP_CLD_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+			<child-processing-resource>
+				<id>URL_DP_CLD_LINK2</id>
+				<display-name>Node 2</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+		</child-processing-resources>
+	</processing-resource>
+
+	<processing-resource>
+		<id>URL_DP_CLAIMS</id>
+		<display-name>Claims Daemon</display-name>
+		<dependancy>
+			<web-resource>
+				<id>URL_WS_CLEAR</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_BUYER</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_ORG</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_ORBS</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_POLICY</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_TH</id>
+			</web-resource>
+		</dependancy>
+		<subprocesses>
+			<id>DocumentProcessingUnit</id>
+			<name>DocumentProcessingUnit</name>
+			<status>true</status>
+		</subprocesses>
+		<subprocesses>
+			<id>RetryProcessingUnit</id>
+			<name>RetryProcessingUnit</name>
+			<status>true</status>
+		</subprocesses>
+		<status>false</status>
+		<overall-health>false</overall-health>
+		<message-count>-1</message-count>
+		<remarks>Daemon is Down</remarks>
+		<available>false</available>
+		<overall-status>down</overall-status>
+		<job-name-indicator>CL</job-name-indicator>
+		<job-name-indicator>GW</job-name-indicator>
+
+		<child-processing-resources>
+			<child-processing-resource>
+				<id>URL_DP_CLAIMS_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+			<child-processing-resource>
+				<id>URL_DP_CLAIMS_LINK2</id>
+				<display-name>Node 2</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+		</child-processing-resources>
+
+	</processing-resource>
+
+	<processing-resource>
+		<id>URL_DP_MPD</id>
+		<display-name>Modula Policy Daemon</display-name>
+		<dependancy>
+			<web-resource>
+				<id>URL_WS_POLICY</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_ORG</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_ORBS</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_DECLARATION</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_TH</id>
+			</web-resource>
+		</dependancy>
+		<subprocesses>
+			<id>DocumentProcessingUnit</id>
+			<name>DocumentProcessingUnit</name>
+			<status>true</status>
+		</subprocesses>
+		<subprocesses>
+			<id>RetryProcessingUnit</id>
+			<name>RetryProcessingUnit</name>
+			<status>true</status>
+		</subprocesses>
+		<status>false</status>
+		<overall-health>true</overall-health>
+		<message-count>-1</message-count>
+		<remarks>Daemon is Down</remarks>
+		<available>false</available>
+		<overall-status>down</overall-status>
+		<job-name-indicator>MO</job-name-indicator>
+		<job-name-indicator>PO</job-name-indicator>
+
+		<child-processing-resources>
+			<child-processing-resource>
+				<id>URL_DP_MPD_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+			<child-processing-resource>
+				<id>URL_DP_MPD_LINK2</id>
+				<display-name>Node 2</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+		</child-processing-resources>
+
+	</processing-resource>
+	<processing-resource>
+		<id>URL_DP_GENERIC</id>
+		<display-name>Generic Daemon</display-name>
+		<dependancy>
+			<web-resource>
+				<id>URL_WS_ORBS</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_TH</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_ORG</id>
+			</web-resource>
+		</dependancy>
+		<status>false</status>
+		<message-count>-1</message-count>
+		<remarks>Daemon is Down</remarks>
+		<available>false</available>
+		<overall-status>down</overall-status>
+		<job-name-indicator>ML</job-name-indicator>
+		<job-name-indicator>BUG</job-name-indicator>
+
+		<child-processing-resources>
+			<child-processing-resource>
+				<id>URL_DP_GENERIC_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+			<child-processing-resource>
+				<id>URL_DP_GENERIC_LINK2</id>
+				<display-name>Node 2</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+		</child-processing-resources>
+	</processing-resource>
+	<processing-resource>
+		<id>URL_DP_FINANCE</id>
+		<display-name>Finance Daemon</display-name>
+		<dependancy>
+			<web-resource>
+				<id>URL_WS_ORBS</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_ORG</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_TH</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_POLICY</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_INVOICE</id>
+			</web-resource>
+		</dependancy>
+		<status>false</status>
+		<message-count>-1</message-count>
+		<remarks>Daemon is Down</remarks>
+		<available>false</available>
+		<overall-status>down</overall-status>
+		<job-name-indicator>FID</job-name-indicator>
+		<job-name-indicator>FIS</job-name-indicator>
+
+		<child-processing-resources>
+			<child-processing-resource>
+				<id>URL_DP_FINANCE_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+			<child-processing-resource>
+				<id>URL_DP_FINANCE_LINK2</id>
+				<display-name>Node 2</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+		</child-processing-resources>
+	</processing-resource>
+
+	<processing-resource>
+		<id>URL_DP_DSB</id>
+		<display-name>DSB Daemon</display-name>
+		<dependancy>
+			<web-resource>
+				<id>URL_WS_ORBS</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_TH</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_WS_ORG</id>
+			</web-resource>
+			<web-resource>
+				<id>URL_DSB</id>
+			</web-resource>
+		</dependancy>
+		<status>false</status>
+		<message-count>-1</message-count>
+		<remarks>Daemon is Down</remarks>
+		<available>false</available>
+		<overall-status>down</overall-status>
+		<job-name-indicator>MTI</job-name-indicator>
+		<job-name-indicator>MTP</job-name-indicator>
+		<job-name-indicator>MTG</job-name-indicator>
+		<job-name-indicator>MTC</job-name-indicator>
+		<job-name-indicator>MTL</job-name-indicator>
+
+		<child-processing-resources>
+			<child-processing-resource>
+				<id>URL_DP_DSB_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+			<child-processing-resource>
+				<id>URL_DP_DSB_LINK2</id>
+				<display-name>Node 2</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+		</child-processing-resources>
+	</processing-resource>
+
+	<processing-resource>
+		<id>URL_DP_GENLETTER</id>
+		<display-name>Generic Letter Daemon</display-name>
+		<dependancy>
+			<web-resource>
+				<id>URL_WS_TH</id>
+			</web-resource>
+		</dependancy>
+		<status>false</status>
+		<message-count>-1</message-count>
+		<remarks>Daemon is Down</remarks>
+		<available>false</available>
+		<overall-status>down</overall-status>
+		<job-name-indicator>GID</job-name-indicator>
+
+		<child-processing-resources>
+			<child-processing-resource>
+				<id>URL_DP_GENLETTER_LINK1</id>
+				<display-name>Node 1</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+			<child-processing-resource>
+				<id>URL_DP_GENLETTER_LINK2</id>
+				<display-name>Node 2</display-name>
+				<status>false</status>
+				<remarks>Resource is Down</remarks>
+			</child-processing-resource>
+		</child-processing-resources>
+	</processing-resource>
+
+</env-config>

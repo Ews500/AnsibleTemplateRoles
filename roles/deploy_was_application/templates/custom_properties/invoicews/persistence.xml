@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="http://java.sun.com/xml/ns/persistence"	version="1.0">
+	<persistence-unit name="invoices">
+		<provider>org.hibernate.ejb.HibernatePersistence</provider>
+		
+		<non-jta-data-source>{{ env_vars.jdbc_datasource_list | json_query('[?db_name==`%s`].jndi_name' | format(vault[app].sym_db_name)) | join(" ") }}</non-jta-data-source>
+		
+			<class>com.atradius.services.dataaccess.hibernate.TbpoInvoices</class>
+			<class>com.atradius.services.dataaccess.hibernate.TbpoInvoiceLines</class>
+			<class>com.atradius.services.dataaccess.hibernate.TbpoBrokerCommission</class>
+			<class>com.atradius.services.dataaccess.hibernate.TbpoBrokerCommLines</class>
+			<class>com.atradius.services.dataaccess.hibernate.TborCurrencies</class>
+			<class>com.atradius.services.dataaccess.hibernate.TborCountries</class>
+	
+		
+		<properties>
+			<property name="hibernate.dialect"
+				value="org.hibernate.dialect.OracleDialect" />
+			<property name="hibernate.connection.pool_size" value="1" />
+
+			<property name="openjpa.TransactionMode" value="managed" />
+			<property name="openjpa.ConnectionFactoryMode"
+				value="managed" />
+			<!-- Disable the second-level cache  -->
+			<property name="hibernate.cache.provider_class"
+				value="org.hibernate.cache.NoCacheProvider" />
+
+			<!-- Echo all executed SQL to stdout -->
+			<property name="hibernate.showSql" value="true" />
+			
+			<property name="hibernate.transaction.factory_class" 
+			value="org.hibernate.transaction.JTATransactionFactory" /> 
+			 <property name="hibernate.transaction.manager_lookup_class" 
+			value="org.hibernate.transaction.WebSphereTransactionManagerLookup" />  
+			<property name="jta.UserTransaction" 
+			value="java:comp/UserTransaction" />
+			
+	   <property name="hibernate.connection.driver_class" value="oracle.jdbc.driver.OracleDriver" />
+		
+		</properties>
+	</persistence-unit>
+</persistence>

@@ -1,0 +1,290 @@
+---
+
+webadmn_user: webadmn
+webadmn_group: webadmn
+
+nfs_volume: "bc21:/software/Oracle_Software/was"
+nfs_mountpoint: /nfstemp
+
+atradius_webteam_accounts:
+  - username: gbjgro3
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAh58w6k1MJGbYMtBmf86NKGUr43pYQb\
+      +PF+7SvgysjP6d5GfY6cj4hmHjEnqAj4Q5u4C7hRLjbsFZ8hif3afr483/Guis76crKP5GYc0V\
+      dcKxbY/Nnewm2oszJQ6qyIBBTTV0GVWHweWphQkDp776Pbz4i0E0hfcH380w1Dr9Yu6zBK4k2Q\
+      +YQnVVSp7BaWu2DRWjyCfNJarc//MongoVR5t5BE+JRckjFXoSqW5azV3DWN2XWuWKlhe2TX3P\
+      MmuZBrhSTG2yAsNcD+tlDUCjuBDgHvuSxCx5l7BMyCkjWuE1quUur/7T1YS5RRirWQyB5tphw1AnQH8XFdIqR9OF5w=="
+    comment: "Josh GROVES-WALLER - Webteam"
+    state: present
+  - username: gbmdia1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAvA/HXrrgMuY2NIU1rr2IQ1/DiDRKny\
+      7vM2IUiJBS7sPRg9AULW0gtMwIHXYey4w4GJ3z+duuVC2XD8NJluZwwLsQbC4mHHqUe3d67tWx\
+      8rOJbRuzCbfITx+TbDy9sT/ri797zV1O9Kn3lTMPD0E59zbJjqFiDqwOTjWPoMxT7xN85jrZQt\
+      ILm7rBng6OOHCyFN3tAD7nMpXATB3a3Mu9MYoX7K3nPRVtkNh5iKJdxTher3oPGM4RrVUIQu8a\
+      OqlEkIIMaNdIfFLTN85XabaZb0gPaU3OS6plIeIhU0l/oG1/oY9F1bU+Py9Bw4W88Sznio+GkEwYnHaVgaMxPLW87Q== gbmdia1"
+    comment: "Mario DIAZ - Webteam"
+    state: present
+  - username: gbdpit1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAw/xLMIuZ5wKTMxWclXYf3FgoRSkZu+\
+      zGJyd/qQXBU/hGB7WSenYvrsL3zVl9cz6OOivoWraBCzm+naDUEga/Ma4kMcaNAa3gc1mjXfGt\
+      vQnJOh+cup5DhjDcqN6Y5zkXNqIxCVH4JYj32Z2msjNZsEZ52DSNVNE0Vw0Wn3GEk0Mvp0j0Bo\
+      U/9cAX9TOCrbqC/pG6kAOmu6l6xeU4/T+Q2TyicEto6hILHa+nLbjuAhEdBVzAGcKjB8tLCEIs\
+      7YINDmQ7eRZUixz3npijzAhGotfLoKMB6gv3NQU0p5B+dBtssNsDC3S01v1VEEiDCVL/NRx6Uiys45HXCBd34PF1Jw== gbdpit1"
+    comment: "Daniel PITT - Webteam"
+    state: present
+  - username: gbtstr1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAoYOBdR3R0tJy2QiDT6d7tcaTtdMQyu\
+      GJ+Afia6XRNPZjIcb3xbVBbRUKRz5S7jSobwIhXnhYph/0NbVErfZuVEU0tH7JjWcHZn4NXjV/\
+      1PAgUfnTJ9wCXR42EpcGOZPSUiuuWv3fWI0nd5som6H7Mps51GpvrPPjbYSD7JoMk0CRkxCZQL\
+      IBdGfX7Kgmd9z+4gCNC+cBBGP1Z2XwpDmDh8LJb7h+nD+ljJ4tzQl3pxn1frcgFGXU5AboJIKe\
+      gLlyCAlqBFSOIIhjaTiZDWhzk1r+Zl+mBEpsGd6atYqBdOkha/d6Uw3niJuVVFAQBInS4cLqlK/xOGtpaTbQot6JGQ== gbtstr1"
+    comment: "Timea STRAKOVA - Webteam"
+    state: present
+  - username: gbpchr1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAzTlTYVtll2I4Haw6UFWQ0PgjRjLNAa\
+      60wlGTlYM82uak+VKUe7UaR7fd2dDokf27wRl+C/oLk+W9CcXhL+dYI6SW/G82JgFNJwvnUf3y\
+      mNuRDik93WZjUGUJgSDcfXlN1SJvgzzFUNMtcp+X6ijtRPNQ9LD8454AIU9tEcufTchYXa0m9u\
+      1upGSO44Gqci/nKjdYCQlmdboGurAFzj6heDDMw3cHiDv+bWKZpIGCzDCDBktZI1FXP4uZINNW\
+      6KGBXT97Gi3lOHOVqTXd/rDJS3jMqhHpkSaXyjZoR8wrX2JywS9PNUVG9P0CI143X4smOBOqzCfAFxAYoGVel8+AJw== gbpchr1"
+    comment: "Peter CHRTIANSKY - Webteam"
+    state: present
+  - username: gbegra1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAgRYNN2Xug5eTwVanHLShfv8DprEdv4\
+      dJo+iFcsk6dbILLAjrvC+nEX9T/khmRXx6BOBYKOWWu5mYGgOWzJXo9yPNzSZOS/LFcTLJAILV\
+      hpp14C72whoM78thEga2UYm9sIzo7zgT095OqhzpNlMaRBRNPZW2/hgtZxuroH6MUnfASkeBWw\
+      X5Nq23C+CnkszBx3ReGIZ06FsIAinis708NObeMfAdEMrqLQsl7f7evK0m2sCblyNNg7mZaPYv\
+      NsEtvmVu15gLB5jbXoMGEEI4xezTB+RwUvAFkR3D61VYDVRfPx7xyyyxA5egQLKE0bU/BblKzDB4qAEe339aDNUH+Q== gbegra1"
+    comment: "Ewan DAVIES - Webteam"
+    state: present
+  - username: gbprev1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAhDOveABTw3ivaPeK6pFOsuAcBIlE2m\
+      8VP9ocuOtPuWi4js+8Df+otp13sc/byyh05VfFK7pnagocXWB4J9isc2FwZIVcsPjeOGRo6LbV\
+      5a4s16HrujL/Y/AYymEAc2FiNaFuBw/Ozeup3KqGBERnpgVHUo18InXS4rK1X7/O9Z14RIVfL3\
+      btB/si5tiO4GeFriTksbYWHD1lAh/D+r3CoInAgM0/zABnj78LT18rtsEYYFAaqbzqqoxNl7Zg\
+      IMvb149lXuGUUu5drqwzOKXDLkANskTWcdU9VmiUdTHg9NjCEdkSPjJBZ8YpTWCEapx6+Wu3doaCL1MueQQg6XqSWQ== gbprev1"
+    comment: "Prarthana REVADI - Webteam"
+    state: present
+  - username: gbmsin2
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAp/VUNLDdI+7zCBaxqng9+fvyfjKX92\
+      TgkZRlTtb1nXVo5YeglSVpUpUzytmxSAEJyWaFb4gZb6coMJ1Vh02z0yPxmpl6pN1rp9MmXb9o\
+      9+qd0/aPWnJciRHQAYtJC/iURTimlIiJ2WBxkty9Kj/tMxWYba0ICRzt1NSssvO3mTjiH5JFgo\
+      JaFFyMBiaBjOW109yZSFL5c3KuwI7UB+amZVR74XoOOnZf6W4b3P2tMf3P3Kw3zpH+oyQSP0kC\
+      kIWpsCeCdWZ4k+odNpnulYFv7xCVLim36PO8Bu23YzrIXHRBA5GCLutXOulZn5x5Jl9+ZsBfAx37RydalNACJRB+uw== gbmsin2"
+    comment: "Manbir SINGH - Webteam"
+    state: present
+  - username: esdben2
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEA2XSD9N/ppSgtR45yTZuyuM/D5yjmP4\
+      GO+Y2nu9CV+titcv6aalMCNsc6G3jLtQFsLpTrUWDwY1ap4C0UwtIrNE9S4lvVCpp8DienpzOc\
+      ebcx5Ev3Ox3ciR2k7e3ie51+TI8W5mcUQeWhy9DUY0LCphUtzaBsbvrCiH9XwGU8kTQBbwo8Ak\
+      dnnhgIbt1jFojppo8+FWpl0Vp+2FF9D0fvoBripHHJsm78N9lGoNfZDG3KtXhggI9ZY2spvq89\
+      +grwGL4eSUanidDjTqzx0y69Y7uMjcimnKI234bl7qWs/WApBjPh2G+jTLFoFyZ6DA927Ikpq3ARLJPRhpe4JX8Hlw== esdben2"
+    comment: "Daniel BENITEZ - Webteam"
+    state: present
+  - username: esasua1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEA0Zfib9KQxdvUiuV8bBvXhhmdPGsGPGjcKXal\
+      zuYRTFzCSIOK5K4ZWiok13L0KafJ+BFSzhCnqHDoxy7CaBfjgz/mOlw6vw0awWVC\
+      xZUlRTX8A8lQ3Z5r0znUq1uJnymIEDgC2kT95TqSp4pbqIrjTcRwVZPSmzve78aA\
+      kgUOMcM/PPAl35+vl7v5a2bPHa9hqylWmFIWcMMII9E3FPEyouYT9LVYgXYQfLDl\
+      83rmw5G8A/9hUAP0tnT9RbTLCdvH28MdKTfSM0hevdPDx6DzccIVQru5b2n0SORH\
+      ht7pCTDixsp5ls/qV7X40KFO3andG8CVwCbMgS5QznSVfrIcvw== esasua1"
+    comment: "Andrea SUAREZ - Webteam"
+    state: present
+  - username: nldgoo1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAIEAvrsKIPWVpYE3U3GigbOmCcEb3ebVI6\
+      lmsOl5qIL2/MvUA6WKLabMzSrRT4IeIE1W9kP/kdQYI9PWMvcOeDNUczbuFoO8ZcUytLTacTKI\
+      dsHdnEB4fIJYbdXrJNRv4ja6IvDFoDlX49u2hAgTWAM0FbLaV9593jiWZ1ZqI0YYFV8= nldgoo1"
+    comment: "Dirk GOOTJES - MRF Support"
+    uid: 1114
+    groups: webadmn
+    state: present
+  - username: insaku1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEA2gDbFf+Y+rW6MxNUXk4GBhhgjGE4xp\
+      Xuif4qZZToD9wvmiVPvukNWr3MtagVWRyHsVnspWinYRDekEZn+VShumHvwRZir/QHwCj7hfSs\
+      OLf9AWZhGC0Yygc8pX8qzUxZz7fa52b1Vy8EnNKpFHWyoZK6vU+tXK/vxqkw7F6pFL8/+EWu3k\
+      Km2g2s7QxPBDSFDhbdSG/7IJ/H08Zp8ZtJerf8+Lsdan4YgMCsr0N+fxxRy3uj8rb7cwxwZ7uq\
+      1mOGJiz8sWCjZTAmT0suKgwBPNjf97alXsYE4z1CqXS7zFsU0gxTStAs5yiYax/9oGdR3DUfXB4mrBWEmDcfhpXt6w== insaku1"
+    comment: "Saurav KUMAR - MRF Support"
+    uid: 20686
+    groups: webadmn
+    state: present
+  - username: gboper1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAIEAs8K2f16pADZ8AIF7RhAwmuF3jAzN3x\
+      TJDaYe/IpNWertFcvKvwSRzDWhHJWqrtW23nXXZiCXlYuyunxwNv05zhR8rvReYdj7NvUdTwXM\
+      9w3bMY1icmiVsI8bZTzh7MsP3FJqxL54N2Nkg2IVvauKKxw55bEhP2gTeSoSX/JX63s= gboper1"
+    comment: "GBOPER1 - MRF Support"
+    uid: 810
+    groups: webadmn
+    state: present
+
+infosys_webteam_accounts:
+  - username: gbcbez1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAm25/vid4V0YuWqh0XLQggBTTshP0c7\
+      DRKL3/gsmqplziUtwt6JHoxWlKJzrhfdZeal9Jv3QM9QUzkx2E4A4UOQbgcwuA97AAOLbRlfeX\
+      lVClsSWpkslQqW0Ffg0F/LIItSkP5U9C83ezuNFyTaIqU8PwMSCY6B/gvZ2Uiex/3M8s2rQq3V\
+      8ZKtK43nj6+UDctn1qH/7hzjgW6sBnlY/wr7YE+noXpxDE0DhDxwtnsH8myO9lDTfT7Tu5Hxkv\
+      3xXKIJXLQwri0qCz9RJueiC2BqgHX7ZaarduvCdws6FAd/bUsvvk/eZRu66lZo82aOluWZl/3GyFOF1vQV+KCBWYcQ== gbcbez1"
+    comment: "Charan BEZAWADA - Infosys"
+    state: present
+  - username: gbrach1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEApQwtS0gJYWQ2fCvOnAU4vP+fVM6S6F\
+      VUfbMk9D9F7uddfrgW8kId68oTblJsn/RoDcRe3CK+E278mG+qa05+4ODU5JwGeTiuhai0rius\
+      xAKheY+lVJnTg1J0GcsjpT8fBO5kDd3PQAfnR7kez0BLbdWN3mzuN8i6uxENR9zG0w7Kg2htWJ\
+      KpGwOrXjlZg5ENa3ah68QQaG/xhZO5dxNWLyBJKP9Wu0BRaTFJyVv7SOIyz1yFK99mxAY5O4xm\
+      vHWgZ5cVjQ8sfFkQMGV7Cgr2MhnddcW1hSKnN1Q3kYEIwbvjSJ+eeMqy4tHUGHky/rKZmrHISogSEol1hUJZqcif0w== gbrach1"
+    comment: "Rajani CH - Infosys"
+    state: present
+  - username: gbjbhu1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAjN16mPU5ato6a6NM6SuoaR/ocSTTGm\
+      SnRdQwwcs8WktSAdGch+kgfbc9kszCSK8X7PkP6ZvcaBIXKlY5jIlaJIB6yQ4HhcGH1vvfwq4K\
+      Rtx/lkca8f8EbILxiKVK8hZHzOlKmja5TIhSZWOrtiNYYUbi8hImuMHfqQQwelGkm7eK8ew8+V\
+      FbOCvxGoOpMFKeIpqXbL+DFc361SxMWvXOeJSigDw7xo2zeGbjUmj6myomWaDZUQZf43o17Cmd\
+      P2Je5OqOFWQ2mHUmNfFlzPkl8ZT7vUU7W9rLxhjLFcs1Z44t9J8LWYhaL9hIZBIhLBbLW2r1v/1T/Y5ormFQ0k0RRw== gbjbhu1"
+    comment: "Jagadeep BHUPATHI - Infosys"
+    state: present
+  - username: gbbgan1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAiNN4SbTTNycfbInPK5M3ylIHbZqEr0pILfwv\
+      S9aKvJa+XX0shugK8ncqNQzPsZRsMobhwfNI+RefA8hLsqckA736ufqULSNRs3TM\
+      dPCBl5ylRjh5urfLd/7dr5WT96hOUHduTJu1Dmom/LO7ZrAd9RnzIEdKHpxUmaAG\
+      FvFrcLtheVqtf6GOiR9elgpe22Ez+TKvPGOkQ0K/IgY1Q4Wbr1Uz+cwBaEFd4/Fp\
+      Q6D1L61HYFdqO4rEIqr+FbT52d1wPa7L3LtBUaVEHbTxd4mgZMVRRDXZwbR9wiKT\
+      MUdp+E/RaVEDZPmfEW1M9xuUBypEzRc/3ySLz7uVqDC2S/K6ZQ== gbbgan1"
+    comment: "Bhupesh GANESHE - Infosys"
+    uid: 20781
+    state: present
+  - username: gbugan1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAj6RSlePvIfVUBwcfaGJEJ20GXl86VKtZyIsu\
+      +klk+1B1RKT1vzOHmngZLrusss7S3qRQby6lnZwMnz/DBNCPAI4jmaGI2Dmn0tWP\
+      l9Dsj/N2JcxXHQHHNCFKGJ5N4P15l1YZE64iicx2MJ8OhPdAJiT779LgA7BGFU8K\
+      mFcqnnFGaWANAS1QSIFr99AUPzMIDTh3u2fJv/+hPSH9mMx3L0mlLXTCGAoFyarg\
+      xhUtYFtcvB/LY9NVCe6mxE/xhD+VuIdG1g1dEadCqpE9XsapngAtuBbAv8Wr9me7\
+      FlJCfM6wtvB27xCjG6Z/hk/zA9Fjql8QCpoWOA1rGFe1yVHhUw== gbugan1"
+    comment: "Udayashankar Reddy GANDHAVEETI - Infosys"
+    uid: 20793
+    state: present
+  - username: gbakum8
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDlg0kRP8NZ61YjlRUcCTiu4QV+Hr\
+      c7dESesIsdID2KiiXi2E4gLOwQz/UIXLyrfuJb///zOBvoMcRl9Mo3Ca+Gje6So22v84H6qAtR\
+      gaCvg/BDYLdRfdN2KuNWmlXtP1ztsn0bfeENJ/zunJJ90aHBYj54hzJQk8oFodJwyzhhjrCkBM\
+      lcTN4FXJwSTofD71F/pnP2ovIIStu+8uvXqeDqTcOf4FcEv1h7tfkb7GO2nDJCQt9gECqxXEyO\
+      5ZOygyuwRzXzDbNA2q94Bmrw5n0XPfjZN0kxDhT2LJ/2XVCxIlP14uHj+A07LXLeCfjZPxNSmuNNpUnnK0oqlSwPsf6p gbakum8"
+    uid: 20807
+    comment: "Adarsh KUMAR - Infosys"
+    state: present
+  - username: gbiahm1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAxXuAerX0uhO2g/NDmsexSZHV21lsWpVByV25\
+      1KjLmeYdq+n7Ejk1HSfMnJRZHwLbfufPoH16KBC1tzdbCnSFgR4TYzP9V59LrSlw\
+      g3PogA4U5nR0TRocMI9LQZD6NCVhIrUtw3/FsU/7Ri3d8uxaTUKMDrNjiAl0QEsw\
+      Lu+McTOJPJEGwQQyfXHwvglqIknO9Bpu2Edi7K6BTkNECssTeYHVd6V13w2RDq3j\
+      pqltFoDysxjeCyFQRYW87G2Pa/kSaQgacTtikatztdMH6Y3XfCirrrUN/OciNWyu\
+      s12+1PTJIG0UqFhd5XYuBNpmTpn1tkccdPgPLBeUbhp86jkVIQ== gbiahm1"
+    uid: 20832
+    comment: "Imran AHMED - Infosys"
+    state: present
+  - username: gbvred2
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEA0By083wh+kaB4JjxXd69CBVTv3643sLchvrD\
+      7TK5cgcN2iF05HEpYJAyOFUJjcXjgcP2omHe89SvPO2mYmsEZ7h0hhJPBPR29FYR\
+      lucn3XM8ks2MWspGh2q90DVLjFCrlTzQ8MJ79W2nk+bbs9dG2MiErzimvotxG9ZV\
+      L4EaQ8YI6zDVtLUbhfGh9+MyESPwabhfKGdR5Oc/L03iGmLFCC5Fwl6xE+xwAyEV\
+      RZzAWw3LzvrrHk9mFnMw3tgpDDCCYE1hqrlcXFj3Kmb10794gL1l4YC17j8NL1Rk\
+      LZScIanxpfqXOO+yA7BJURsFeX9nCYm9h2WkkK7M2sHN4xTJDw== gbvred2"
+    uid: 20810
+    comment: "Venu Gopal REDDY - Infosys"
+    state: present
+
+operations_team_accounts:
+  - username: gbddav1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAIEAyZx2Du+MtGfU8CR8v2gwz+J0Kg402G\
+      ayawc4rORse8gMc3bxMyhu8F9zNc6fvOcbwuUYlSPazpT+uIYTZF5HLNgMmGx1k4qDRypGDLG0\
+      7AyNTCgd5Sl+k6E49V7olCuwlyiJ6FG/fQadNP1X7LaxpkRzVReF+dpsO/RLhvORk78= gbddav1"
+    uid: 802
+    comment: "Des Davies - OPSteam"
+    state: present
+  - username: gbcrow1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAIEAmSdiJtrKxjo9cZFLCV12A+DQmGpUNF\
+      zVYFAsl4Xi1miYTJWtNqgKd+oPEBjCYu45hSLPnMauk/BA9PhqGdPxhT2VCyEMwr2/3vzDEq7C\
+      epSThF6Lxx1sm7d/d3DflhE/L35XWKxfKPvgmVPRFxk6fTLxI6s+feqwT5tC4DNC5nk= gbcrow1"
+    uid: 801
+    comment: "Chris Rowlands - OPSteam"
+    state: present
+  - username: gbmmos3
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAtpnsatQgtYiiWp323/1n/vVePZ1E6g\
+      AuQMl1fjPbcfwwVlaYzzo4FrK5/ta8P1/FrLphbBXlaB2xVz/5f0FyWyKZczTzhnAFG8ehzgZT\
+      LDFA34OO1PXyJXJaACAErUMsFK/QOPnrJUyq4wuOUEgPRAR8/znIu41t4aewYFAKvC0fleCCyT\
+      aL+59ttoEvgcl8jyJ32vaM+vFtK38qWseJJf1CYQgAXZMk7OYgQlmNEuqa4y4kyyDqkbFWEiRp\
+      hbzI1wDGMR7TSz+yPG/Ac4j13dWiUMMifVNADCU8lK7TxdPh0979Qz+nxJ90Bl1Y6x3BkA3I8hvSB1jwuJ6v0XPKHQ== gbmmos3"
+    uid: 813
+    comment: "Mahmoud Mosalam - OPSteam"
+    state: present
+  - username: gbmher1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAIEAlWpNgsO2e4I0g8O0SHey+kh5aHtv5w\
+      KuKB24mIwY5MeuioDx3G1vjr7Ei2XXn4tTinbLBreqsCkbtNC0L62HG4D0qx35+hpC9PjSdI99\
+      sG/nPZyRF28HfQPhHXhby7C7gBFfb7vdagiyaANdJOz+L+hkqLTrw3NXw1h0iwT4lrM= gbmher1"
+    uid: 805
+    comment: "Martin Herbert - OPSteam"
+    state: present
+  - username: gbsjon3
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAIEAjCWCODgehcVsvao5ywWMpDHk/Q9cDN\
+      LX2MNdOWqcncNIC4TrvreRo2u9R2lhCNmQhtxfpTp7Mjs73MdDXFpCoq5VVhP9i02LpzlRnc18\
+      1g0n8zQXkBIj8twUnTIGFscqd6P7ip+Z/CWzO7Mbf2goxaZwubekRQuCCCtfFfatLVk= gbsjon3"
+    uid: 806
+    comment: "Steve Jones - OPSteam"
+    state: present
+  - username: gbdlin1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAor6uxJObWDb1t8tuw8ke9hKjm/uLV8\
+      GlXBSLBrHXmvioZVzPv02LI07rCSX2zmowLRS3Kv15/MhwOlJjenmWZ1SZkhyRCgCZ4ZiYOtN4\
+      TNAbS2InDPo9ru/vUwyPD1KFK3nHSQ6cmazVeG0IPgjCJCCXjwaRdtmcesS4Cz1lpMiJX25ppB\
+      ukSJ5sq38iA0BvXMyBRJ7/ISVGCWm7mQpaiB82u3pjsQa7KL9xNa601DoFEFi1KVCm65/GHlxz\
+      uxDzpBaM/F2al5b6f2ClePRsuJJVJXgwJrJ8HTOcw9lUQtQCl8E73UyjbC17jLGImvv/gC7S5VDWIgFMJnql3RNSGw== gbdlin1"
+    uid: 812
+    comment: "Darren Lindsay - OPSteam"
+    state: present
+  - username: gbmven1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAloshvJ+xVXgKQPX5Xa6ip4KaxvO2dm\
+      zMnfVoJ9dCAhZJtwKlJgful73ELgeBIjjSq4wnFnBXE77EL6irCrJvesh8duu7sp6JOXe09O2S\
+      Qf0vTosCzlkHf5GcEKcVf8RvEYtZ/4pekXMJuZA0orpk84RittQT6pJUwGPLrnpzc3dZ4iMkHD\
+      0BzSFs8ZJfuBr0AxAfzf2mbosra0EhcsLkVJwQA4U1NQKfhUkYQcTIpOzHN/f5Ely3Te9gb9Fh\
+      8NPNWIjzAfN9mRaUZCvSBVis5vemVrtzz/UTakVki6AEVjNspd1UcCl8ZkmTF6wzBVsgLomsBYG1H33VYHnUnsqsWQ== gbmven1"
+    uid: 811
+    comment: "Mark Veness - OPSteam"
+    state: present
+  - username: gbgjim1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAnG+D9alYuiklMzfPoIKgYoAuFb1XNw\
+      UjMSUTtgLjH7VTJxnvnT7Kav/IPOKo3jA2Fcm4rDQUicGwpzdyTIG3utlIEIvxLzEIImF0w62F\
+      5cn4FVjNHlGlMMttTjOTOCtVgS/RXlmF1KpDFLylivP40e+H6tJbkOMG2WSJB92g/r7hxgbLws\
+      Eu5q6n0vBqCYdP8l+3u9/UB7BRWWp1R1nn6yGrgAz9bGC+mXbmLSL0VM3NbSIOq0kuEAhxnWnr\
+      /VIFk5uGrVs+90fYzo7gu+l2YVQ8XsBR5vKOIsOUIB8FbkBfWDfOcqHTiWMQKLQMsPjk2/xzf6gwrBvl2kc3gNmifw== gbgjim1"
+    uid: 804
+    comment: "Gerry Jimenez - OPSteam"
+    state: present
+
+removed_webteam_accounts:
+  - username: gbjkaz1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAh02CJLgnyrbViZYCAapf07DYEV4d6s\
+      1o2jymvsazta1+R8+GfYsa3Zj8H5X1Ita3gpIg0sdM4vLEb74h1yr2Y8Myh6MTk6PC9SQKNQuu\
+      YKKRhYdwa/kDG+tJF90rshiAg5ZhIEwfE1xHmLsPwf/j+/KRgPuJ1Sf8fo4FA22mnnl1aSFbFR\
+      g8eylZz7BLyDdgvKwYHp0VyHAYfLmH7bce7izyuFJ2FSNGGKSCDzJPJ6W4bCKLffNId8HBi7Li\
+      61b5VJDVs45ylcNiwB7/fo1h8p8bxZPtYIeoV8LNaPIoB+f0iyuabAGAITrzjbNvwRn1VyN3bihaopryoN8Ph9QG9Q== gbjkaz1"
+    state: absent
+  - username: gbtkur1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAg3U3XEg/Tw+7BSF1BhBFU4Ke264LlM\
+      oq+IMJa6s4hApKQCnq4OlVkbR5bFXbDtHNo755asjRWLHAr9013roBZ1TBltaFOCL9qULiGYl4\
+      1ZU/Bou6YCOm2F+He6DdiNp27NR2e4WxKXe4Dhc2HAvFAQ4a5Z5B1sBfPfFYD9E0F90vDpRWZp\
+      MvP7ug0Q0+vMWZdA+4DsYE2UDwytvDa37K3Vkdszw0Pk6SQGE2spqZQaWZtw+919/VoqAb/dJb\
+      GWaxSvQ230RPd8BLugzmdNJM/djJ9xa7Dkus8iQq2AvRegM9vXSyKp3hlGu8e7zB3da+sus1A8G1mashfokMXxl9vw== gbtkur1"
+    comment: "Tushar KURDE - Infosys"
+    state: absent
+  - username: gbkpat1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAjRacixmyUBFOxWmYRYqsFgRrlVaaDu\
+      LfIQJ56yuOYnBiuvBElXgJGWisXAvEQkUZA7Y2SG/9gTGR0wu57Bef6m0yrpDzOuczDSG/ErY0\
+      xi/lXe5Yvgsv+CTLZrwvBxs7DB/CuDYO0SZJvejWU89CJDcK8BaRxjc4uZ45I1Lgyda/MqyY1a\
+      oE+3N+8a2eYviKn2YWEMwoWrZBbs47H6kJfXUOATr9Aj81b1LMKpWLZqra2qpWER8y/o9EVftK\
+      Xh8Wm0JMW2g6k7dlWKuWqrQxspxUdOm1gmkqSdKnNSX7G5mc+NH/pj9qajjM9/1LCjDxZXvcWax/MAmsF+r7XyHggQ== gbkpat1"
+    comment: "Kaustubh PATIL - Infosys"
+    state: absent
+  - username: gbsmup1
+    ssh_key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAm+l3qw2CpvqZNv7qoy9EoHHOjh7T7d\
+      aVtM1NIMc3TwIYh6oiiiQeGOfdiJFEB2f52/wrZBfQ9oqE2lHV9s0D/2tiJgM3dE949AJ8omrC\
+      OuYZ1qsZutDB8YxCD2YsXeNTs7KX5Eye8pOJBQMAhFp4fAHO08L8/A58hs4pgE6SNSFm2MSvFw\
+      EoQgTVXVNu6OzutwT8UrnV22JSOoUOAeP18o01hZWQdX6cO7LVjWqD29Ue1guPuUPQ4/JGX2zz\
+      bWr3KNAL1FMAbydHk8+eTi8aSDEphtio2yYvUsqEWk0f9EQlo5dmNwq2DeIqP9wiO9y19OmBnZpXFAypD1tn8CVg/Q== gbsmup1"
+    comment: "Srinivas MUPPADI - Infosys"
+    state: absent

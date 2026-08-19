@@ -1,0 +1,27 @@
+---
+- name: Add username value to attribute
+  tags: set_security
+  ansible.builtin.lineinfile:
+    path: "{{ profile_dir }}/properties/soap.client.props"
+    regexp: "^com.ibm.SOAP.loginUserid="
+    line: "com.ibm.SOAP.loginUserid={{ vault.admin_username }}"
+
+- name: Add password value to attribute
+  tags: set_security
+  ansible.builtin.lineinfile:
+    path: "{{ profile_dir }}/properties/soap.client.props"
+    regexp: "^com.ibm.SOAP.loginPassword="
+    line: "com.ibm.SOAP.loginPassword={{ vault.admin_password }}"
+
+- name: Change SOAP Connection Timeout value
+  tags: set_security
+  ansible.builtin.lineinfile:
+    path: "{{ profile_dir }}/properties/soap.client.props"
+    regexp: "^com.ibm.SOAP.requestTimeout="
+    line: "com.ibm.SOAP.requestTimeout=0"
+
+- name: Encode password wiith PropFilePasswordEncoder
+  tags: set_security
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/PropFilePasswordEncoder.sh {{ profile_dir }}/properties/soap.client.props com.ibm.SOAP.loginPassword" # noqa yaml[line-length]
+  changed_when: true

@@ -1,0 +1,59 @@
+- name: Check if JDBC provider exists
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  block:
+    - name: List of JDBC Drivers for Cluster
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c "
+        print AdminConfig.list('JDBCProvider', AdminConfig.getid( '/Cell:{{ env_vars.cell_name }}/ServerCluster:{{ env_vars.cluster_name }}/'))"
+      register: jdbc_provider_check
+      changed_when: false
+      failed_when: jdbc_provider_check.rc != 0
+
+    - name: Set JDBC driver path as WebSphere variable at Cluster Scope
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c "
+        AdminConfig.create('VariableSubstitutionEntry',
+        '(cells/{{ env_vars.cell_name }}/clusters/{{ env_vars.cluster_name }}|variables.xml)',
+        '[[symbolicName \"{{ jdbc_provider.was_var_name }}\"] [description \"{{ jdbc_provider.was_var_desc }}\"] [value \"{{ jdbc_provider.native_path }}\"]]')"
+      changed_when: jdbc_driver_var_creation_cluster.rc == 0
+      register: jdbc_driver_var_creation_cluster
+
+    - name: Save the WebSphere configuration
+      ansible.builtin.command:
+        cmd: "{{ dmgr_profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c 'AdminConfig.save()'"
+      when: jdbc_driver_var_creation_cluster is defined
+      changed_when: true
+
+    - name: Create JDBC provider
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c "
+        AdminTask.createJDBCProvider('[-scope Cluster={{ env_vars.cluster_name }} -databaseType {{ jdbc_provider.db_type }}
+        -providerType \"{{ jdbc_provider.provider_type }}\" -implementationClassName \"{{ jdbc_provider.impl_class_name }}\"
+        -implementationType \"{{ jdbc_provider.impl_type }}\" -name \"{{ jdbc_provider.name }}\"
+        -description \"{{ jdbc_provider.was_var_name }}\" -classpath {{ jdbc_provider.classpath }} -nativePath \"{{ jdbc_provider.native_path }}\" ]')"
+      when: not jdbc_provider.name in jdbc_provider_check.stdout
+      changed_when: true
+
+    - name: Save JDBC Provider
+      ansible.builtin.command:
+        cmd: "{{ dmgr_profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP  -c 'AdminConfig.save()'"
+      changed_when: true
+
+    - name: Get JDBC Provider ID
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c "
+        print AdminConfig.getid('/Server:{{ env_vars.server_name }}/JDBCProvider:{{ jdbc_provider.name }}/')"
+      register: jdbc_provider_id
+      changed_when: false
+
+- name: Perform Node Sync
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c 'AdminNodeManagement.syncActiveNodes()'"
+  register: sync_node_output
+  changed_when: true
+
+- name: Node Synced status
+  ansible.builtin.debug:
+    var: sync_node_output.stdout
+  when: sync_node_output is defined

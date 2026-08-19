@@ -1,0 +1,198 @@
+---
+
+- name: Include host level variables
+  tags: always
+  ansible.builtin.include_vars:
+    file: "../../../environments/{{ env_code }}/host_vars/{{ inventory_hostname_short }}.yml"
+    name: target_host_vars
+
+- name: Create group - webadmn
+  tags: webadmn_setup
+  ansible.builtin.group:
+    name: "{{ webadmn_group }}"
+    state: present
+    gid: 700
+
+- name: Create user - webadmn
+  tags: webadmn_setup
+  ansible.builtin.user:
+    name: "{{ webadmn_user }}"
+    group: "{{ webadmn_group }}"
+    uid: 700
+
+- name: Add users to group - webadmn
+  tags: webadmn_setup
+  ansible.builtin.user:
+    name: '{{ item }}'
+    groups: webadmn
+    append: true
+  with_items: "{{ target_host_vars.webadmn_group_extras | default([]) }}" # variable from host_vars
+
+- name: Setup svc_devops_websphere
+  tags: devops_ssh
+  when: "'ihs' not in group_names" # Only for WAS servers
+  block:
+
+    - name: Create group - svc_devops_websphere
+      ansible.builtin.group:
+        name: svc_devops_websphere
+        state: present
+        gid: 1057
+
+    - name: Create user - svc_devops_websphere
+      ansible.builtin.user:
+        name: svc_devops_websphere
+        group: svc_devops_websphere
+        uid: 1057
+        password_expire_max: 99999
+        password_expire_min: 99999
+
+    - name: Add SSH Key - svc_devops_websphere
+      ansible.posix.authorized_key:
+        user: svc_devops_websphere
+        key: "{{ lookup('file', 'svc_devops_websphere.key') }}"
+        state: present
+        exclusive: true
+
+- name: Create directories
+  tags: create_dirs
+  ansible.builtin.file:
+    path: "{{ item.name }}"
+    owner: "{{ webadmn_user }}"
+    group: "{{ webadmn_group }}"
+    mode: "{{ item.permissions }}" # quote octal numbers
+    state: directory
+  with_items:
+    - "{{ required_dirs }}"
+
+- name: Install libraries
+  tags: rpm_install
+  vars:
+    distribution_query: "[?distribution=='{{ ansible_distribution }}' && major_version=='{{ ansible_distribution_major_version }}']"
+  when: "'ihs' not in group_names and (supplementary_rpms | json_query(distribution_query) | length > 0)" # Only for WAS servers
+  block:
+
+    - name: Install required libraries with dnf
+      ansible.builtin.dnf:
+        name: "{{ packages_list }}"
+        state: present
+      vars:
+        packages_list: "{{ supplementary_rpms | json_query(distribution_query) | json_query('[0].packages_list') }}"
+      retries: 5
+      delay: 5
+      register: result
+      until: result is succeeded
+      ignore_errors: true
+
+- name: Create team users
+  tags: create_users
+  ansible.builtin.user:
+    name: "{{ item.username }}"
+    create_home: true
+    state: "{{ item.state }}"
+    uid: "{{ item.uid | default(omit) }}"
+    comment: "{{ item.comment | default(omit) }}"
+    password_expire_max: 99999
+    password_expire_min: 99999
+    groups: "{{ item.groups | default('') }}"
+    append: true
+  with_items:
+    - "{{ atradius_webteam_accounts }}"
+    - "{{ infosys_webteam_accounts }}"
+    - "{{ operations_team_accounts }}"
+    - "{{ removed_webteam_accounts }}"
+
+- name: Authorized Key Update
+  tags: create_users
+  ansible.posix.authorized_key:
+    user: "{{ item.username }}"
+    key: "{{ item.ssh_key }}"
+    state: "{{ item.state }}"
+  with_items:
+    - "{{ atradius_webteam_accounts }}"
+    - "{{ infosys_webteam_accounts }}"
+    - "{{ operations_team_accounts }}"
+    - "{{ removed_webteam_accounts }}"
+  when: item.state == "present"
+
+- name: Change user group
+  tags: create_users
+  ansible.builtin.user:
+    name: "{{ item.username }}"
+    group: "{{ item.group }}"
+  with_items:
+    - "{{ atradius_webteam_accounts }}"
+    - "{{ infosys_webteam_accounts }}"
+    - "{{ operations_team_accounts }}"
+    - "{{ removed_webteam_accounts }}"
+  when: item.group is defined
+
+- name: Add 03-webteam sudoers # noqa yaml[line-length]
+  become: true
+  become_user: root
+  tags: create_users
+  ansible.builtin.blockinfile:
+    path: /etc/sudoers.d/03-webteam
+    marker: "# {mark} Webteam Accounts - Managed by atradius-was-iac repo ANSIBLE MANAGED BLOCK"
+    owner: root
+    group: root
+    mode: "0640"
+    create: true # Create a new file if it does not exist
+    block: |
+      User_Alias WEB_WEB = {% for item in atradius_webteam_accounts %}
+      {% if item['state'] == "present" %}{{ item['username'] }},{% if loop.last %}{{ item['username'] }}{% endif %}{% endif %}
+      {% endfor %}
+
+      User_Alias WEB_INFO = {% for item in infosys_webteam_accounts %}
+      {% if item['state'] == "present" %}{{ item['username'] }}{% if not loop.last %},{% endif %}{% endif %}
+      {% endfor %}
+
+      WEB_WEB ALL = ({{ webadmn_user }}) NOPASSWD: ALL
+      WEB_INFO ALL = ({{ webadmn_user }}) NOPASSWD: ALL
+      WEB_WEB ALL = (root) NOPASSWD: /sysman/operators/*
+      WEB_INFO ALL = (root) NOPASSWD: /sysman/operators/*
+
+- name: Add 04-opsteam sudoers # noqa yaml[line-length]
+  become: true
+  become_user: root
+  tags: create_users
+  ansible.builtin.blockinfile:
+    path: /etc/sudoers.d/04-opsteam
+    marker: "# {mark} Operations Team Accounts - Managed by atradius-was-iac repo ANSIBLE MANAGED BLOCK"
+    owner: root
+    group: root
+    mode: "0640"
+    create: true # Create a new file if it does not exist
+    block: |
+      User_Alias OPS_TEAM = {% for item in operations_team_accounts %}
+      {% if item['state'] == "present" %}{{ item['username'] }},{% if loop.last %}{{ item['username'] }}{% endif %}{% endif %}
+      {% endfor %}
+
+      OPS_TEAM ALL = (root) NOPASSWD: /sysman/operators/*, /usr/bin/lsof
+
+- name: Mount source binary NFS share
+  tags: nfs_mount
+  ansible.posix.mount:
+    src: "{{ nfs_volume }}"
+    path: "{{ nfs_mountpoint }}"
+    fstype: "nfs"
+    state: mounted
+
+- name: Update ulimits
+  tags: ulimits
+  community.general.pam_limits:
+    domain: "{{ item.domain }}"
+    limit_type: "{{ item.type }}"
+    limit_item: "{{ item.limit }}"
+    value: "{{ item.value }}"
+  with_items: "{{ ulimits }}"
+
+- name: Set core_pattern to write core files to the JVM working directory
+  become: true
+  tags: core_pattern
+  ansible.posix.sysctl:
+    name: kernel.core_pattern
+    value: "core.%e.%p.%t"
+    state: present
+    sysctl_set: true
+    reload: true

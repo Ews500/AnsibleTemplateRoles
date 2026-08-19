@@ -1,0 +1,22 @@
+# roles/stop_service/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/stop_service/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the stop_service role
+    description:
+      - This is the main entrypoint for the C(stop_service) role.
+      - Stops WebSphere Application Server standalone services using systemctl.
+      - Validates that the application is standalone before proceeding.
+      - Performs graceful shutdown with proper timeout handling.
+      - Verifies service stopped successfully.
+    version_added: 1.0.0
+    author:
+      - Josh Groves-Waller (@GBJGRO3)
+    options:
+      app:
+        type: "str"
+        required: true
+        description:
+          - "Application name to stop"
+          - "Must match application configuration"

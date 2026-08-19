@@ -1,0 +1,192 @@
+# templates/jaas_ds_cleanup.py.j2
+#
+# Rendered by Ansible. Do not edit on target.
+# Params:
+#   dryRun: {{ dry_run | bool }}
+#   providerName: {{ jdbc_datasource.provider_name }}
+#   doJaas: {{ delete_jaas | bool }}
+#   doDS: {{ delete_datasources | bool }}
+
+# -------------------------------------------------------------------
+# CONFIG (moved into a function)
+# -------------------------------------------------------------------
+
+def build_config():
+    cfg = {}
+
+    cfg['dryRun'] = {{ "True" if (dry_run | bool) else "False" }}
+    cfg['providerName'] = "{{ jdbc_datasource.provider_name | replace('\"', '\\\"') }}"
+    # cfg['providerName'] = "Oracle JDBC Driver"
+    cfg['doJaas'] = {{ "True" if (delete_jaas | bool) else "False" }}
+    cfg['doDS'] = {{ "True" if (delete_datasources | bool) else "False" }}
+
+    print "=== CLEANUP START ==="
+    print "dryRun =", cfg['dryRun']
+    print "providerName =", cfg['providerName']
+    print "deleteJaas =", cfg['doJaas']
+    print "deleteDatasources =", cfg['doDS']
+    print ""
+
+    return cfg
+
+# -------------------------------------------------------------------
+# CLEANUP FUNCTIONS (unchanged logic, but use cfg values)
+# -------------------------------------------------------------------
+
+def cleanup_jaas(dryRun):
+    print "=== JAASAuthData CLEANUP ==="
+    ids = AdminConfig.list("JAASAuthData")
+    if not ids:
+        print "No JAASAuthData entries found"
+        print ""
+        return 0
+
+    entries = []
+    for jid in ids.splitlines():
+        a = AdminConfig.showAttribute(jid, "alias")
+        if a is None:
+            a = ""
+        entries.append((jid, a))
+
+    # dict as set for old Jython compatibility
+    suffixes = {}
+    for (jid, a) in entries:
+        if "/" in a:
+            suf = a.split("/")[-1]
+            suffixes[suf] = 1
+
+    deleted = 0
+    for (jid, a) in entries:
+        should_delete = False
+        if "/" in a:
+            should_delete = True
+        elif a in suffixes:
+            should_delete = True
+
+        if should_delete:
+            print "Deleting JAASAuthData alias:", a
+            if not dryRun:
+                try:
+                    AdminTask.deleteAuthDataEntry('[-alias "%s"]' % a)
+                    deleted += 1
+                except:
+                    print "WARNING: Failed to delete JAASAuthData alias:", a
+            else:
+                deleted += 1
+
+    print "JAASAuthData entries matched for deletion:", deleted
+    print ""
+    return deleted
+
+def cleanup_oracle_datasources(providerName, dryRun):
+    print "=== DATASOURCE CLEANUP (JDBCProvider.name == '%s') ===" % providerName
+
+    providers = AdminConfig.list("JDBCProvider")
+    if not providers:
+        print "No JDBCProvider objects found"
+        print ""
+        return 0
+
+    matchedProviders = []
+    for pid in providers.splitlines():
+        pname = AdminConfig.showAttribute(pid, "name")
+        if pname is None:
+            pname = ""
+        if pname.strip() == providerName:
+            matchedProviders.append(pid)
+
+    if not matchedProviders:
+        print "No JDBCProvider found with name:", providerName
+        print ""
+        return 0
+
+    allDS = AdminConfig.list("DataSource")
+    allDSList = allDS.splitlines() if allDS else []
+
+    deletedTotal = 0
+    for pid in matchedProviders:
+        print "Matched JDBCProvider:", (AdminConfig.showAttribute(pid, "name") or "").strip()
+        print "  Provider ID:", pid
+
+        dsUnder = []
+        for dsid in allDSList:
+            parent = None
+            try:
+                parent = AdminConfig.getParent(dsid)
+            except:
+                parent = None
+
+            if parent and parent == pid:
+                dsUnder.append(dsid)
+                continue
+
+            ref1 = None
+            ref2 = None
+            try:
+                ref1 = AdminConfig.showAttribute(dsid, "jdbcProvider")
+            except:
+                ref1 = None
+            try:
+                ref2 = AdminConfig.showAttribute(dsid, "provider")
+            except:
+                ref2 = None
+
+            if (ref1 and ref1 == pid) or (ref2 and ref2 == pid):
+                dsUnder.append(dsid)
+
+        if not dsUnder:
+            print "  No DataSources found under this provider."
+            continue
+
+        for dsid in dsUnder:
+            dsName = AdminConfig.showAttribute(dsid, "name") or "(unknown)"
+            jndi = AdminConfig.showAttribute(dsid, "jndiName") or ""
+            print "  Deleting DataSource:", dsName, ("(JNDI=%s)" % jndi if jndi else "")
+            if not dryRun:
+                try:
+                    AdminConfig.remove(dsid)
+                    deletedTotal += 1
+                except:
+                    print "  WARNING: Failed to remove DataSource:", dsName
+            else:
+                deletedTotal += 1
+
+    print "DataSources matched for deletion:", deletedTotal
+    print ""
+    return deletedTotal
+
+# -------------------------------------------------------------------
+# MAIN (moved into a function)
+# -------------------------------------------------------------------
+
+def main():
+    cfg = build_config()
+
+    jaas_deleted = 0
+    ds_deleted = 0
+
+    if cfg['doJaas']:
+        jaas_deleted = cleanup_jaas(cfg['dryRun'])
+
+    if cfg['doDS']:
+        ds_deleted = cleanup_oracle_datasources(cfg['providerName'], cfg['dryRun'])
+
+    if cfg['dryRun']:
+        print "=== DRY RUN COMPLETE ==="
+        print "Would delete JAASAuthData entries:", jaas_deleted
+        print "Would delete DataSources:", ds_deleted
+        print "No changes saved."
+    else:
+        print "=== APPLYING CHANGES ==="
+        AdminConfig.save()
+        print "Saved configuration."
+        print "Deleted JAASAuthData entries:", jaas_deleted
+        print "Deleted DataSources:", ds_deleted
+
+    print "=== CLEANUP END ==="
+
+# -------------------------------------------------------------------
+# Script entrypoint
+# -------------------------------------------------------------------
+
+main()

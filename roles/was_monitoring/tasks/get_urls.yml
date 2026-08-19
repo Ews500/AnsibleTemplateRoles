@@ -1,0 +1,39 @@
+---
+
+- name: Include environment level variables
+  ansible.builtin.include_vars:
+    file: "environments/{{ env_code }}/group_vars/{{ app }}.yml"
+    name: env_vars
+
+- name: Include app level variables
+  ansible.builtin.include_vars:
+    file: "environments/app_vars/{{ app }}.yml"
+    name: app_vars
+
+- name: Set additional urls fact
+  ansible.builtin.set_fact:
+    more_urls: "{{ additional_urls }}"
+  when: additional_urls is defined
+
+- name: Print additional urls
+  ansible.builtin.debug:
+    msg: "{{ additional_urls }}"
+  when: additional_urls is defined
+
+- name: Set http urls fact
+  ansible.builtin.set_fact:
+    http_url_to_use: "http://{{ inventory_hostname }}:{{ env_vars.was_http_port }}/{{ app_vars.monitor_address | default(env_vars.app_context) }}"
+
+- name: Set https urls fact
+  ansible.builtin.set_fact:
+    https_url_to_use: "https://{{ inventory_hostname }}:{{ env_vars.was_https_port }}/{{ app_vars.monitor_address | default(env_vars.app_context) }}"
+
+- name: Set loadbalanced urls fact
+  ansible.builtin.set_fact:
+    loadbalanced_url: "https://{{ monitor_vars.hostname_var }}.atradiusnet.com/{{ app_vars.monitor_address | default(env_vars.app_context) }}" # Internal LB URL
+  vars:
+    monitor_vars: "{{ nd_vars if env_vars.dmgr_host is defined else standalone_vars }}"
+
+- name: Add array for host
+  ansible.builtin.set_fact:
+    url_array: "{{ (url_array | default([])) + [http_url_to_use] + [https_url_to_use] + [loadbalanced_url] + ([more_urls] if more_urls is defined and more_urls | length > 0 else []) }}" # noqa yaml[line-length]

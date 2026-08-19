@@ -1,0 +1,39 @@
+- name: Print Env variables
+  run_once: true
+  ansible.builtin.debug:
+    msg: "{{ env_code }}"
+
+- name: Check if the cluster exists
+  tags: check_cluster
+  ansible.builtin.include_tasks: check_cluster.yml
+
+# Run the remaining tasks only if the cluster exists or was created
+- name: Configure WebSphere Security cluster
+  tags: config_was_security
+  when: cluster_exists_flag
+  block:
+
+    - name: Setup JAAS-J2C Users for JDBC data sources
+      tags: ds_jass_setup
+      no_log: true # To avoid printing user/pw in output
+      ansible.builtin.include_tasks: jaas_ds_create.yml
+      loop: "{{ env_vars.jdbc_datasource_list }}"
+      loop_control:
+        loop_var: jdbc_datasource
+      when: env_vars.jdbc_datasource_list is defined
+
+    - name: Assign JAAS-J2C Users to JDBC data sources
+      tags: assign_j2c_users
+      ansible.builtin.include_tasks: update_jass_ds.yml
+
+    - name: Node Sync
+      tags: sync_active_nodes
+      ansible.builtin.include_tasks: sync_nodes.yml
+
+    - name: Stop Cluster
+      tags: stop_cluster
+      ansible.builtin.include_tasks: stop_cluster.yml
+
+    - name: Start Cluster
+      tags: start_cluster
+      ansible.builtin.include_tasks: start_cluster.yml

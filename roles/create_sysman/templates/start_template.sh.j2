@@ -1,0 +1,146 @@
+#!/bin/ksh
+#export PATH="/usr/bin:/etc:/usr/sbin:/usr/ucb:/sbin:/usr/local/bin"
+if [ $# -gt 0 ]; then echo "No arguments expected or required!!!"; exit 16; fi
+
+#MAN:7
+#*********************************************************************
+#*.-----------------------------------------------------------------.*
+#*|                                                                 |*
+#*| Function - Script to start WebSphere Application Server         |*
+#*|                                                                 |*
+#*|            No parameters are expected/required                  |*
+#*.-----------------------------------------------------------------.*
+#*|                                                                 |*
+#*| Change Activity Log:                                            |*
+#*|                                                                 |*
+#*| NNNN  DD-MMM-YY  Description                                    |*
+#*| ----  ---------  ---------------------------------------------  |*
+#*| 0000  21-Jan-15  Original by ................  Martyn Jones     |*
+#*'-----------------------------------------------------------------'*
+#*********************************************************************
+
+#---------------------------------------------------------------------
+# Perform initialisation
+#---------------------------------------------------------------------
+MyCmd=$(whence   $0)
+MyDir=$(dirname  ${MyCmd})
+MyCmd=$(basename $0)
+MyArgs="$*"
+PATH=${PATH}:${MyDir}
+export PATH
+MyRc=0
+export WEBSPHERE_LOG=${WEBSPHERE_LOG:=/var/log/websphere/${MyCmd}.$(date "+%Y_%m_%d_%H_%M_%S").log}
+
+WAS_HOME={{ was_profile }}
+#---------------------------------------------------------------------
+# Next line set the websphere application server - APP_SERVER
+#---------------------------------------------------------------------
+APP_SERVER={{ server_name }}
+DATE=$(date +%d/%m/%y)
+
+echo;echo
+echo "Logging of startup in ${WEBSPHERE_LOG}"
+echo;echo
+
+echo "---------------------------------------------------"  >> ${WEBSPHERE_LOG}
+echo "- START -- startup on $(date "+%Y-%m-%d %T")      -"  >> ${WEBSPHERE_LOG}
+echo "---------------------------------------------------"  >> ${WEBSPHERE_LOG}
+
+#---------------------------------------------------------------------
+# Display start-up message in the system log
+#---------------------------------------------------------------------
+#alogecho "Running ${MyDir}/${MyCmd} ${MyArgs}" >> ${SYSMAN_ALOG}
+echo "################################################################" >> ${WEBSPHERE_LOG}
+echo "# Running ${MyDir}/${MyCmd} ${MyArgs}"                            >> ${WEBSPHERE_LOG}
+echo "################################################################" >> ${WEBSPHERE_LOG}
+
+#---------------------------------------------------------------------
+# On exit display termination message into system log.
+#---------------------------------------------------------------------
+trap "terminate;" 0
+function terminate
+{
+  echo "Completed ${MyDir}/${MyCmd}, RC=${MyRc}"  >> ${WEBSPHERE_LOG}
+  echo "Completed ${MyDir}/${MyCmd}, RC=${MyRc}\n\n"
+}
+
+trap "murder;" 1 2 3 15
+function murder
+{
+  MyRc=255
+  echo "${MyDir}/${MyCmd} is being murdered!!!" 1>&2
+  echo "${MyDir}/${MyCmd} is being murdered!!!"   >> ${WEBSPHERE_LOG}
+  exit ${MyRc}
+}
+
+#---------------------------------------------------------------------
+# Ensure NO parameters other than those expected have been passed
+#---------------------------------------------------------------------
+if [ $# -ne 0 ]; then
+  echo "Invalid number of parameters supplied $#, none expected!!!"
+  MyRc=16
+  exit ${MyRc}
+fi
+
+#---------------------------------------------------------------------
+# Start the application
+#---------------------------------------------------------------------
+echo "Starting WebSphere Application Server."
+
+rm -f ${WAS_HOME}/bin/nohup.out
+(( MyRc = MyRc + $? ))
+su - webadmn -c "nohup ${WAS_HOME}/bin/startServer.sh ${APP_SERVER}" >> ${WEBSPHERE_LOG}
+(( MyRc = MyRc + $? ))
+
+echo "WebSphere initialisation complete" >> ${WEBSPHERE_LOG}
+
+#---------------------------------------------------------------------
+# Check startup
+#---------------------------------------------------------------------
+#sleep 5
+#echo "Checking startup of WebSphere Application Server ${APP_SERVER} ...\n"
+ 
+
+#---------------------------------------------------------------------
+# Check if pid file is present for WebSphere Application Server
+#---------------------------------------------------------------------
+#if [ $(ls ${WAS_HOME}/logs/${APP_SERVER}/${APP_SERVER}.pid | wc -l) -ne 0 ]; then
+#   echo "WebSphere Application Server ${APP_SERVER} has a pid file ${WAS_HOME}/logs/${APP_SERVER}/${APP_SERVER}.pid"
+#else
+echo "Error information might be in log files in directory ${WAS_HOME}/logs/${APP_SERVER}"                        >> ${WEBSPHERE_LOG}
+echo "Check ${WAS_HOME}/logs/${APP_SERVER}/startServer.log if server is open for e-business after 5-10 minutes"   >> ${WEBSPHERE_LOG}
+#   (( MyRc = MyRc + 8 ))
+#fi
+#
+##---------------------------------------------------------------------
+## Check if server is open for e-business
+##---------------------------------------------------------------------
+#if [ $(tail -1 ${WAS_HOME}/logs/${APP_SERVER}/startServer.log | grep $DATE | grep "Server ${APP_SERVER} open for e-business" | wc -l) -ne 0 ]; then
+#   echo "Websphere Application Server ${APP_SERVER} is open for e-business"
+#else
+#   echo "Websphere Application Server ${APP_SERVER} is NOT open for e-business"
+#   echo "Check ${WAS_HOME}/logs/${APP_SERVER}/startServer.log for more information"
+#   (( MyRc = MyRc + 8 ))
+#fi
+#
+#if [ $MyRc -eq 0 ]; then
+#   echo
+#   echo "WebSphere Application Server ${APP_SERVER} is started correctly"
+#else
+#   echo "WebSphere Application Server ${APP_SERVER} may not be running after startup?"
+#fi
+
+echo "RC : ${MyRc}" >> ${WEBSPHERE_LOG}
+
+echo "---------------------------------------------------"  >> ${WEBSPHERE_LOG}
+echo "- END ---- startup on   $(date "+%Y-%m-%d %T")    -"  >> ${WEBSPHERE_LOG}
+echo "---------------------------------------------------"  >> ${WEBSPHERE_LOG}
+
+
+cat ${WEBSPHERE_LOG}
+
+exit ${MyRc}
+
+
+
+

@@ -1,0 +1,44 @@
+- name: Set service_name
+  tags: always
+  ansible.builtin.set_fact:
+    service_name: "{{ target_group_vars.nodeagent_service }}.service"
+
+# Start Node Agent
+- name: Start Node Agent
+  tags: start_nodeagent
+  block:
+
+    - name: Check service status
+      ansible.builtin.service_facts:
+
+    - name: Output service status
+      ansible.builtin.debug:
+        var: ansible_facts.services[service_name]
+      failed_when: ansible_facts.services[service_name].state == "running"
+
+    - name: Check if processes are running
+      become: true
+      ansible.builtin.shell: "set -o pipefail && ps -fu webadmn \
+        | grep java | grep -v grep | egrep -E -- 'nodeagent' | awk {'print $2'}"  # noqa no-changed-when
+      register: running_processes
+      failed_when: false
+
+    - name: Print process ID
+      ansible.builtin.debug:
+        msg: "Process already running PID '{{ running_processes.stdout_lines }}'"
+      when: running_processes.stdout_lines | length > 0
+
+    - name: Start service
+      become: true
+      become_user: root
+      ansible.builtin.systemd:
+        name: "{{ service_name }}"
+        state: started
+
+    - name: Check service status
+      ansible.builtin.service_facts:
+
+    - name: Output service status
+      ansible.builtin.debug:
+        var: ansible_facts.services[service_name]
+      changed_when: true

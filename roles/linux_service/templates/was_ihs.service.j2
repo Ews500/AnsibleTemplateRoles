@@ -1,0 +1,19 @@
+[Unit]
+Description=IBM HTTP Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+PIDFile={{ was_path }}/logs/httpd.pid
+ExecStart={{ was_path }}/bin/apachectl start -d /app/HTTPServer
+ExecStop={{ was_path }}/bin/apachectl graceful-stop
+ExecReload={{ was_path }}/bin/apachectl graceful
+PrivateTmp=true
+User=webadmn
+Group=webadmn
+TimeoutSec=180
+LimitNOFILE=infinity
+
+[Install]
+WantedBy=multi-user.target

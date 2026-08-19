@@ -1,0 +1,75 @@
+iim_product_id: "\"id='com.ibm.cic.agent'\""
+
+tpl_file: "was_install.rsp.j2"
+rsp_file: "was_install.rsp"
+log_file: "was_install.{{ lookup('pipe', 'date +%Y%m%d%H%M') }}.log"
+
+tpl_ls: "list_clusters_on_node.py.j2"
+rsp_ls_file: "list_clusters.py"
+
+standalone_vars:
+  was_files:
+    file_name: "was.repo.90501.base.zip"
+  version_check: "Installed com.ibm.websphere.BASE.v90"
+  was_offering_id: "com.ibm.websphere.BASE.v90"
+  was_path: "/app/WAS"
+  was_services_scripts: "/opt/eteam/scripts"
+
+nd_vars:
+  was_files:
+    file_name: "was.repo.90501.nd.zip"
+  version_check: "Installed com.ibm.websphere.ND.v90"
+  was_offering_id: "com.ibm.websphere.ND.v90"
+  was_path: "/app/WASND"
+  profile_dir: "/app/WASND/profiles/Custom01"
+  node_profile: "Custom01"
+  dmgr_profile: "Dmgr01"
+  dmgr_soap_port: "8879"
+  target_node_name: "{{ (inventory_hostname | split('.'))[0] }}Node01"
+  dmgr_host: "{{ 'lpwas101dmgr' if env_code in ['RELS', 'PROD'] else 'ltwas101dmgr' }}"
+  nodeagent_service: was_nodeagent
+  stop_bin_script: stopNode.sh
+
+was_vars:
+  profile_id: "IBM WebSphere Application Server V9.0"
+  features: "core.feature,ejbdeploy,thinclient,embeddablecontainer"
+  base_release: "9.0.5.01" # Base version to install WAS
+  base_version: "9.0.5001.20190828_0616"
+  target_fixpack: "9.0.5.27" # Fixpack to install
+
+was_releases:
+  - release: "9.0.5.01"
+    fixpacks:
+      - {id: "9.0.5.27", state: active, version: "9.0.5027.20260306_2357", file_name: "9.0.5-WS-WAS-FP027.zip", release_date: "20260306"}
+      - {id: "9.0.5.26", state: inactive, version: "9.0.5026.20251114_1520", file_name: "9.0.5-WS-WAS-FP026.zip", release_date: "20251114"}
+      - {id: "9.0.5.24", state: inactive, version: "9.0.5024.20250528_1830", file_name: "9.0.5-WS-WAS-FP024.zip", release_date: "20250528"}
+      - {id: "9.0.5.23", state: inactive, version: "9.0.5023.20250307_1839", file_name: "9.0.5-WS-WAS-FP023.zip", release_date: "20250307"}
+      - {id: "9.0.5.22", state: inactive, version: "9.0.5022.20241118_0055", file_name: "9.0.5-WS-WAS-FP022.zip", release_date: "20241203"}
+      - {id: "9.0.5.21", state: inactive, version: "9.0.5021.20240823_1839", file_name: "9.0.5-WS-WAS-FP021.zip", release_date: "20240910"}
+      - {id: "9.0.5.20", state: inactive, version: "9.0.5020.20240605_1405", file_name: "9.0.5-WS-WAS-FP020.zip", release_date: "20240618"}
+      - {id: "9.0.5.19", state: inactive, version: "9.0.5019.20240304_1205", file_name: "9.0.5-WS-WAS-FP019.zip", release_date: "20240326"}
+      - {id: "9.0.5.18", state: inactive, version: "9.0.5018.20231113_1345", file_name: "9.0.5-WS-WAS-FP018.zip", release_date: "20231212"}
+      - {id: "9.0.5.17", state: inactive, version: "9.0.5017.20230818_1035", file_name: "9.0.5-WS-WAS-FP017.zip", release_date: "20230919"}
+
+java_vars:
+  offering_id: "com.ibm.java.jdk.v8"
+  features: "com.ibm.sdk.8"
+  file_name: "8.0-5.35-WS-IBMWASJAVA-Linux.zip"
+  base_release: "8.0.5.0" # Base version to install JDK
+  base_version: "8.0.5035.20190422_0948"
+  target_release: "8.0.8.0" # Base version for JDK fixpack
+  target_fixpack: "8.0.8.60" # Fixpack to install
+
+# Get id and version attributes from repository
+# https://www-147.ibm.com/software/repositorymanager/com.ibm.java.jdk.v8
+java_releases:
+  - release: "8.0.8.0"
+    fixpacks:
+      - {id: "8.0.8.60", state: active, version: "8.0.8060.20260119_0831", file_name: "ibm-java-sdk-8.0-8.60-linux-x64-installmgr.zip", was_fp: "9.0.5.27"}
+      - {id: "8.0.8.50", state: inactive, version: "8.0.8050.20250703_0834", file_name: "ibm-java-sdk-8.0-8.50-linux-x64-installmgr.zip", was_fp: "9.0.5.24"}
+      - {id: "8.0.8.40", state: inactive, version: "8.0.8040.20250128_0059", file_name: "ibm-java-sdk-8.0-8.40-linux-x64-installmgr.zip", was_fp: "9.0.5.23"}
+      - {id: "8.0.8.35", state: inactive, version: "8.0.8035.20241125_0150", file_name: "ibm-java-sdk-8.0-8.35-linux-x64-installmgr.zip", was_fp: "9.0.5.22"}
+      - {id: "8.0.8.30", state: inactive, version: "8.0.8030.20241024_0253", file_name: "ibm-java-sdk-8.0-8.30-linux-x64.zip", was_fp: "9.0.5.21"}
+      - {id: "8.0.8.26", state: inactive, version: "8.0.8026.20240624_1030", file_name: "ibm-java-sdk-8.0-8.26-linux-x64-installmgr.zip", was_fp: "9.0.5.20"}
+      - {id: "8.0.8.25", state: inactive, version: "8.0.8025.20240408_0724", file_name: "ibm-java-sdk-8.0-8.25-linux-x64-installmgr.zip", was_fp: "9.0.5.19"}
+      - {id: "8.0.8.20", state: inactive, version: "8.0.8020.20240116_0839", file_name: "ibm-java-sdk-8.0-8.20-linux-x64-installmgr.zip", was_fp: "9.0.5.18"}

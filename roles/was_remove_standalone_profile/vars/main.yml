@@ -1,0 +1,2 @@
+---
+profile_dir: "{{ was_path }}/profiles/{{ env_vars.profile_name }}"

@@ -1,0 +1,16 @@
+- name: Create profile
+  tags: create_profile
+  ansible.builtin.command: >
+    {{ was_path }}/bin/manageprofiles.sh -create -profileName {{ env_vars.profile_name }}
+    -templatePath {{ was_path }}/profileTemplates/default
+    -cellName {{ env_vars.cell_name }} -nodeName Node{{ ansible_hostname[-5:-3] }}
+    -hostName {{ ansible_hostname }} -adminUserName {{ vault.admin_username }}
+    -adminPassword {{ vault.admin_password }} -enableAdminSecurity true
+    -omitAction samplesInstallAndConfig
+  register: profile_creation_output
+  changed_when: "'INSTCONFSUCCESS' in profile_creation_output.stdout"
+
+- name: Set profile_exists_flag after profile creation
+  ansible.builtin.set_fact:
+    profile_exists_flag: true
+  when: "'INSTCONFSUCCESS' in profile_creation_output.stdout"

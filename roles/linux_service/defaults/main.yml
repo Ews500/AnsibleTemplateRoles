@@ -1,0 +1,6 @@
+---
+
+dmgr_profile: Dmgr01
+dmgr_server: dmgr
+nodeagent_profile: Custom01
+nodeagent_server: nodeagent

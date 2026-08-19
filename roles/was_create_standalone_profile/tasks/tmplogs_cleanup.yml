@@ -1,0 +1,19 @@
+- name: Cleanup wstmp directory
+  ansible.builtin.file:
+    path: "{{ profile_dir }}/wstemp"
+    state: absent
+
+- name: Cleanup profile temp directory
+  ansible.builtin.file:
+    path: "{{ profile_dir }}/temp/"
+    state: absent
+
+- name: Cleanup translog directory
+  ansible.builtin.file:
+    path: "{{ profile_dir }}/tranlog/WASCell"
+    state: absent
+
+- name: Cleanup config temp directory
+  ansible.builtin.file:
+    path: "{{ profile_dir }}/config/temp"
+    state: absent

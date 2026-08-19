@@ -1,0 +1,80 @@
+- name: Deploy application
+  tags: deployment
+  become: true
+  become_user: "webadmn"
+  vars:
+    deployment_vars: "{{ nd_vars if env_vars.dmgr_host is defined else standalone_vars }}"
+  block:
+    - name: Print deployment_vars variable
+      ansible.builtin.debug:
+        msg: "{{ deployment_vars }}"
+
+    - name: Check ear file exists
+      ansible.builtin.stat:
+        path: "{{ deployment_vars.deployable_path }}/{{ env_vars.app_name }}.ear"
+      register: ear_st
+
+    - name: Fail if ear file does not exist
+      ansible.builtin.fail:
+        msg: "{{ deployment_vars.deployable_path }}/{{ env_vars.app_name }}.ear DOES NOT exists" # "EAR file DOES NOT exist"
+      when: not ear_st.stat.exists
+
+    - name: Check wsadmin utility exists
+      ansible.builtin.stat:
+        path: "{{ deployment_vars.wsadmin_path }}/wsadmin.sh"
+      register: wsadmin_st
+
+    - name: Fail if wsadmin utility does not exist
+      ansible.builtin.fail:
+        msg: "{{ deployment_vars.wsadmin_path }}/wsadmin.sh DOES NOT exist"
+      when: not wsadmin_st.stat.exists
+
+    - name: Create temporary directory
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: "deploy-{{ env_vars.app_name }}-"
+      register: deploy_dir
+
+    - name: Package application
+      tags: package_app
+      ansible.builtin.include_tasks: package_app.yml
+
+    - name: Stop application
+      tags: stop_app
+      ansible.builtin.include_tasks: stop_app.yml
+
+    - name: Uninstall application
+      tags: uninstall_app
+      ansible.builtin.include_tasks: uninstall_app.yml
+
+    - name: Install application
+      tags: install_app
+      ansible.builtin.include_tasks: install_app.yml
+
+    - name: Start application
+      tags: start_app
+      ansible.builtin.include_tasks: start_app.yml
+
+
+    - name: Check symlink exists
+      ansible.builtin.stat:
+        path: "{{ env_vars.app_symlink.src_dir }}"
+      register: symlink_st
+      when: env_vars.app_symlink is defined
+
+    - name: Create application symbolic links
+      ansible.builtin.file:
+        src: "{{ env_vars.app_symlink.dst_dir }}"
+        dest: "{{ env_vars.app_symlink.src_dir }}"
+        owner: webadmn
+        group: webadmn
+        state: link
+      when: env_vars.app_symlink is defined and not symlink_st.stat.exists
+
+  ## End of block
+  always:
+    - name: Remove temporary directory for deployment
+      ansible.builtin.file:
+        state: absent
+        dest: "{{ deploy_dir.path }}"
+      when: deploy_dir.path is defined

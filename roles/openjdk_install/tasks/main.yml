@@ -1,0 +1,39 @@
+---
+
+- name: Install Java
+  tags: install_java
+  when: openjdk | default(false)
+  block:
+    - name: Create jdk home directory
+      ansible.builtin.file:
+        path: "{{ java_home }}"
+        state: directory
+        owner: webadmn
+        group: webadmn
+        mode: '0755'
+
+    - name: Create jdk binary directory
+      ansible.builtin.file:
+        path: "{{ java_home }}/jdk-{{ java_version }}"
+        state: directory
+        owner: webadmn
+        group: webadmn
+        mode: '0755'
+
+    - name: Unarchive Java
+      ansible.builtin.unarchive:
+        src: "{{ jdk_installables }}/java-11-openjdk-{{ java_version }}.portable.jre.el.x86_64.tar.xz"
+        dest: "{{ java_home }}/jdk-{{ java_version }}"
+        creates: "{{ java_home }}/jdk-{{ java_version }}/java-11-openjdk-{{ java_version }}.portable.jre.el.x86_64"
+        remote_src: true
+        owner: webadmn
+        group: webadmn
+        mode: "0755"
+
+    - name: Set java as the symlink
+      ansible.builtin.file:
+        src: "{{ java_home }}/jdk-{{ java_version }}/java-11-openjdk-{{ java_version }}.portable.jre.el.x86_64"
+        dest: "{{ java_symlink }}"
+        owner: webadmn
+        group: webadmn
+        state: link

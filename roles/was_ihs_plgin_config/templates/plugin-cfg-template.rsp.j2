@@ -1,0 +1,37 @@
+    <ServerCluster CloneSeparatorChange="false" GetDWLMTable="true"
+        IgnoreAffinityRequests="true" LoadBalance="Round Robin"
+        Name="{{ unique_cluster_name }}" PostBufferSize="0"
+        PostSizeLimit="-1" RemoveSpecialHeaders="true"
+        RetryInterval="60" ServerIOTimeoutRetry="-1">
+        <Server ConnectTimeout="5" ExtendedHandshake="false"
+            MaxConnections="-1" Name="{{ server_name }}"
+            ServerIOTimeout="900" WaitForContinue="false">
+            <Transport ConnectionTTL="28" Hostname="{{ ansible_hostname }}"
+                Port="{{ app_host_ports.http_port_value }}" Protocol="http"/>
+            <Transport ConnectionTTL="28" Hostname="{{ ansible_hostname }}"
+                HostnameAlias="{{ ansible_hostname }}" Port="{{ app_host_ports.https_port_value }}" Protocol="https">
+                <Property Name="keyring" Value="{{ keyringfile }}"/>
+                <Property Name="stashfile" Value="{{ stashfile }}"/>
+            </Transport>
+        </Server>
+        <PrimaryServers>
+            <Server Name="{{ server_name }}"/>
+        </PrimaryServers>
+    </ServerCluster>
+    <!-- Virtual Host Groups -->
+    <VirtualHostGroup Name="{{ unique_virtual_host_group_name }}">
+        <VirtualHost Name="*:{{ app_host_ports.wsd_port_value }}"/>
+        <VirtualHost Name="*:{{ app_host_ports.wsds_port_value }}"/>
+        <VirtualHost Name="*:{{ app_host_ports.wsdhttp_port_value }}"/>
+        <VirtualHost Name="*:{{ app_host_ports.wsdhttps_port_value }}"/>
+        <VirtualHost Name="*:{{ app_host_ports.http_port_value }}"/>
+        <VirtualHost Name="*:{{ app_host_ports.https_port_value }}"/>        
+    </VirtualHostGroup>
+    <!-- URI Groups -->
+    <UriGroup Name="{{ unique_uri_group_name }}">
+        <Uri AffinityCookie="JSESSIONID"
+            AffinityURLIdentifier="jsessionid" Name="/{{ env_vars.app_context }}/*"/>
+    </UriGroup>
+	<!-- Routes -->
+	<Route ServerCluster="{{ unique_cluster_name }}"
+        UriGroup="{{ unique_uri_group_name }}" VirtualHostGroup="{{ unique_virtual_host_group_name }}"/>

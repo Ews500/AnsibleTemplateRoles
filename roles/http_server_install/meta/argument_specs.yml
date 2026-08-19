@@ -1,0 +1,23 @@
+# roles/http_server_install/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/http_server_install/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the http_server_install role
+    description:
+      - This is the main entrypoint for the C(http_server_install) role.
+      - Installs IBM HTTP Server, Web Server Plug-ins and Web Server Customization Toolbox.
+      - Validates that target_group is 'ihs' before proceeding.
+      - Uses IBM Installation Manager to perform the installation.
+      - Configures the web server components for integration with WebSphere.
+    version_added: 1.0.0
+    author:
+      - Manbir Singh (@GBMSINGH)
+    options:
+      target_group:
+        type: "str"
+        required: true
+        choices: ["ihs"]
+        description:
+          - "Target group for installation"
+          - "Must be 'ihs' for IBM HTTP Server installation"

@@ -1,0 +1,32 @@
+- name: Modify Ports for Newly Created Application Servers
+  block:
+    - name: Determine host value based on endpoint_name
+      ansible.builtin.set_fact:
+        port_host: "{{ '*' if profile_port.endpoint_name in ['WC_defaulthost', 'WC_defaulthost_secure'] else ansible_hostname }}"
+
+    - name: Customise Server Ports for cluster members
+      ansible.builtin.command: >-
+        {{ profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c
+        "AdminTask.modifyServerPort('{{ env_vars.server_name }}',
+        '[-nodeName {{ ansible_hostname }}Node01
+        -endPointName {{ profile_port.endpoint_name }}
+        -host {{ port_host }}
+        -port {{ profile_port.port_value }}
+        -modifyShared true]')"
+      changed_when: true
+
+    - name: Save the WebSphere configuration
+      ansible.builtin.command:
+        cmd: "{{ profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP -c 'AdminConfig.save()'"
+      changed_when: true
+
+    - name: Perform Node Sync
+      ansible.builtin.command:
+        cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c 'AdminNodeManagement.syncActiveNodes()'"
+      register: sync_node_output
+      changed_when: true
+
+    - name: Node Synced status
+      ansible.builtin.debug:
+        var: sync_node_output.stdout
+      when: sync_node_output is defined

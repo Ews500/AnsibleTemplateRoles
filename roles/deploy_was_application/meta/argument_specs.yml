@@ -1,0 +1,28 @@
+# roles/deploy_was_application/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/deploy_was_application/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the deploy_was_application role
+    description:
+      - This is the main entrypoint for the C(deploy_was_application) role.
+      - First it is verified that config_prop_files variable is defined, otherwise the role will fail.
+      - Then, C(app_vars), C(env_vars), and host variables are printed in the output.
+      - After that the deployment happens, either in the Deployment Manager (dmgr) box for clustered apps
+        or in the standalone box(es).
+      - The deployment steps can be found at C(deploy_app.yml). They are divided in different tasks files.
+        Package application, C(package_app.yml), to expand EAR file, set config properties and collapse.
+        Stop application, C(stop_app.yml), to stop the app with a Jython script.
+        Uninstall application, C(uninstall_app.yml), to uninstall the app with a Jython script.
+        Install application, C(install_app.yml), to install the app with a Jython script.
+        Start application, C(start_app.yml), to start the app with a Jython script.
+    version_added: 1.0.0
+    author:
+      - Daniel Benitez (@ESDBEN2)
+    options:
+      app:
+        type: "str"
+        required: true
+        description:
+          - "Application name to deploy"
+          - "Check application names in environments/<env_code>/hosts files"

@@ -1,0 +1,110 @@
+- name: Start cluster members only on one node
+  block:
+
+    # -------------------- DMGR zone --------------------
+    - name: Discover members on target node via dmgr
+      delegate_to: "{{ dmgr_host }}"
+      block:
+
+        - name: Remove any old scripts (avoid stale /tmp confusion)
+          ansible.builtin.file:
+            path: "/tmp/{{ (inventory_hostname | split('.'))[0] }}_{{ rsp_ls_file }}"
+            state: absent
+
+        - name: Create Jython script to list cluster members on a node
+          ansible.builtin.template:
+            src: "{{ tpl_ls }}"
+            dest: "/tmp/{{ (inventory_hostname | split('.'))[0] }}_{{ rsp_ls_file }}"
+            mode: '0644'
+
+        - name: List cluster member servers hosted on target node
+          ansible.builtin.command: >
+            {{ target_group_vars.was_path }}/profiles/{{ target_group_vars.dmgr_profile }}/bin/wsadmin.sh -con soap -lang jython
+            -f /tmp/{{ (inventory_hostname | split('.'))[0] }}_{{ rsp_ls_file }} {{ target_group_vars.target_node_name }}
+          register: members_out
+          changed_when: false
+          failed_when: members_out.rc != 0
+
+    # Facts should be set on the current inventory host context (NOT delegated)
+    - name: Build server list facts
+      ansible.builtin.set_fact:
+        node_servers_to_start: >-
+          {{
+            members_out.stdout_lines
+            | reject('equalto', '')
+            | reject('match', '^WASX[0-9]+[IEW]:')
+            | reject('match', '^Clusters with members on node:')
+            | map('regex_replace', '^[^A-Za-z0-9]+', '')
+            | map('trim')
+            | reject('equalto', '')
+            | unique
+            | list
+          }}
+
+    - name: End host processing if no servers found
+      ansible.builtin.meta: end_host
+      when: node_servers_to_start | length == 0
+
+    # -------------------- NODE zone --------------------
+    - name: Start servers locally on node
+      block:
+        - name: Check server status on node
+          ansible.builtin.command:
+            argv:
+              - "{{ target_group_vars.was_path }}/profiles/{{ target_group_vars.node_profile }}/bin/serverStatus.sh"
+              - "{{ item }}"
+              - -profileName
+              - "{{ target_group_vars.node_profile }}"
+          loop: "{{ node_servers_to_start }}"
+          loop_control:
+            label: "{{ item }}"
+          register: status_before
+          changed_when: false
+          failed_when: false
+
+        - name: Start server locally if not running
+          ansible.builtin.command:
+            argv:
+              - "{{ target_group_vars.was_path }}/profiles/{{ target_group_vars.node_profile }}/bin/startServer.sh"
+              - "{{ item.item }}"
+              - -profileName
+              - "{{ target_group_vars.node_profile }}"
+          loop: "{{ status_before.results }}"
+          loop_control:
+            label: "{{ item.item }}"
+          when: (item.stdout | default('')) is not search('STARTED')
+          register: start_local
+          changed_when: true
+          failed_when: false
+
+        - name: Wait for JVMs to initialise
+          ansible.builtin.pause:
+            seconds: 8
+
+        - name: Re-check server status after start
+          ansible.builtin.command:
+            argv:
+              - "{{ target_group_vars.was_path }}/profiles/{{ target_group_vars.node_profile }}/bin/serverStatus.sh"
+              - "{{ item }}"
+              - -profileName
+              - "{{ target_group_vars.node_profile }}"
+          loop: "{{ node_servers_to_start }}"
+          register: status_after
+          changed_when: false
+          failed_when: false
+
+    - name: Fail if any server is still not STARTED
+      ansible.builtin.fail:
+        msg: >-
+          Servers still NOT STARTED on node:
+          {{
+            status_after.results
+            | rejectattr('stdout', 'search', 'STARTED')
+            | map(attribute='item')
+            | list
+          }}
+      when: >
+        status_after.results
+        | rejectattr('stdout', 'search', 'STARTED')
+        | list
+        | length > 0

@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+            http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.0.xsd" default-lazy-init="true">
+	<!-- ======================== FILTER CHAIN ======================= -->
+	<bean id="filterChainProxy" class="org.acegisecurity.util.FilterChainProxy">
+		<property name="filterInvocationDefinitionSource">
+			<value>
+                CONVERT_URL_TO_LOWERCASE_BEFORE_COMPARISON
+                PATTERN_TYPE_APACHE_ANT
+                /images/**=#NONE#
+                /scripts/**=#NONE#
+                /styles/**=#NONE#
+                /manualupload/**=httpSessionContextIntegrationFilter,authenticationProcessingFilter,basicProcessingFilter,securityContextHolderAwareRequestFilter,anonymousProcessingFilter,exceptionTranslationFilterManualUpload,filterInvocationInterceptor
+                /**/*=httpSessionContextIntegrationFilter,authenticationProcessingFilter,securityContextHolderAwareRequestFilter,anonymousProcessingFilter,exceptionTranslationFilter,filterInvocationInterceptor
+            </value>
+			<!-- Put channelProcessingFilter before securityContextHolderAwareRequestFilter to turn on SSL switching -->
+			<!-- It's off by default b/c Canoo WebTest doesn't support SSL out-of-the-box -->
+		</property>
+	</bean>
+	<bean id="basicProcessingFilter" class="org.acegisecurity.ui.basicauth.BasicProcessingFilter">
+      <property name="authenticationManager"><ref local="authenticationManager"/></property>
+      <property name="authenticationEntryPoint"><ref local="basicProcessingFilterEntryPoint"/></property>
+   </bean>
+
+   <bean id="basicProcessingFilterEntryPoint" class="org.acegisecurity.ui.basicauth.BasicProcessingFilterEntryPoint">
+      <property name="realmName" value="fsdf"/>
+   </bean>
+
+	<bean id="httpSessionContextIntegrationFilter" class="org.acegisecurity.context.HttpSessionContextIntegrationFilter"/>
+	<!-- Changed to use logout.jsp since causes 404 on WebSphere: http://issues.appfuse.org/browse/APF-566 -->
+	<!--bean id="logoutFilter" class="org.acegisecurity.ui.logout.LogoutFilter">
+        <constructor-arg value="/index.jsp"/>
+        <constructor-arg>
+            <list>
+                <ref bean="rememberMeServices"/>
+                <bean class="org.acegisecurity.ui.logout.SecurityContextLogoutHandler"/>
+            </list>
+        </constructor-arg>
+        <property name="filterProcessesUrl" value="/logout.jsp"/>
+    </bean-->
+	<bean id="authenticationProcessingFilter" class="org.acegisecurity.ui.webapp.AuthenticationProcessingFilter">
+		<property name="authenticationManager" ref="authenticationManager"/>
+		<property name="authenticationFailureUrl" value="/login.jsp?error=true"/>
+		<property name="defaultTargetUrl" value="/"/>
+		<property name="filterProcessesUrl" value="/j_security_check"/>
+		<!--
+		<property name="rememberMeServices" ref="rememberMeServices"/>
+		-->
+	</bean>
+	<bean id="securityContextHolderAwareRequestFilter" class="org.acegisecurity.wrapper.SecurityContextHolderAwareRequestFilter"/>
+
+	<!--  RememberMeProcessingFilter has been disabled for OID changes, Abhinav Gupta -->
+	<!--
+	<bean id="rememberMeProcessingFilter" class="org.acegisecurity.ui.rememberme.RememberMeProcessingFilter">
+		<property name="authenticationManager" ref="authenticationManager"/>
+		<property name="rememberMeServices" ref="rememberMeServices"/>
+	</bean>
+	-->
+	<bean id="anonymousProcessingFilter" class="org.acegisecurity.providers.anonymous.AnonymousProcessingFilter">
+		<property name="key" value="anonymous"/>
+		<property name="userAttribute" value="anonymous,ROLE_ANONYMOUS"/>
+	</bean>
+	<bean id="exceptionTranslationFilter" class="org.acegisecurity.ui.ExceptionTranslationFilter">
+		<property name="authenticationEntryPoint">
+			<bean class="org.acegisecurity.ui.webapp.AuthenticationProcessingFilterEntryPoint">
+				<property name="loginFormUrl" value="/login.jsp"/>
+				<property name="forceHttps" value="false"/>
+			</bean>
+		</property>
+		<property name="accessDeniedHandler">
+			<bean class="org.acegisecurity.ui.AccessDeniedHandlerImpl">
+				<property name="errorPage" value="/403.jsp"/>
+				<!--
+					if the redirection is /403.jsp, there is
+					a bug in the footer.jsp with the tag :
+				 	<authz:authentication operation="fullname"/>
+					It needs to be corrected.
+				 -->
+			</bean>
+		</property>
+	</bean>
+	<bean id="exceptionTranslationFilterManualUpload" class="org.acegisecurity.ui.ExceptionTranslationFilter">
+		<property name="authenticationEntryPoint">
+			<bean class="org.acegisecurity.ui.webapp.AuthenticationProcessingFilterEntryPoint">
+				<property name="loginFormUrl" value="/login.jsp"/>
+				<property name="forceHttps" value="false"/>
+			</bean>
+		</property>
+		<property name="accessDeniedHandler">
+			<bean class="org.acegisecurity.ui.AccessDeniedHandlerImpl">
+			</bean>
+		</property>
+	</bean>
+	<bean id="filterInvocationInterceptor" class="org.acegisecurity.intercept.web.FilterSecurityInterceptor">
+		<property name="authenticationManager" ref="authenticationManager"/>
+		<property name="accessDecisionManager" ref="accessDecisionManager"/>
+        <property name="objectDefinitionSource">
+            <value>
+                PATTERN_TYPE_APACHE_ANT
+                /agreement/viewAgreementHistory*=ROLE_ADMIN,ROLE_USER
+                /agreement/agreementAdd*=ROLE_ADMIN,ROLE_USER
+                /agreement/listPendingAgreements*=ROLE_ADMIN
+                /agreement/viewAgreementDetail*=ROLE_ADMIN
+                /agreement/agreementSelection*=ROLE_ADMIN,ROLE_USER
+                /agreement/listAgreementStatus*=ROLE_ADMIN,ROLE_USER
+                /partnershipgrouping/newAgreemen*=ROLE_ADMIN,ROLE_USER
+                /partnershipgrouping/listPartnershipGrouping*=ROLE_ADMIN,ROLE_USER
+                /partnershipgrouping/listPendingTreaties* = ROLE_ADMIN
+                /partnershipgrouping/viewPendingTreaty* = ROLE_ADMIN
+                /partnershipgrouping/manageGroupingStatusList*=ROLE_ADMIN,ROLE_USER
+                /yearlygrouping/yearlyGroupingPendingList* = ROLE_ADMIN
+                /yearlygrouping/yearlyGroupingPendingApprovalList* = ROLE_ADMIN
+                /yearlygrouping/yearlyGroupingApprovalList* = ROLE_ADMIN
+                /yearlygrouping/yearlyGroupingManageData* = ROLE_ADMIN
+                /yearlygrouping/yearlyGroupingData* = ROLE_ADMIN
+                /dataAdmin/*=ROLE_DATA_ADMIN
+                /agreement/*=ROLE_ADMIN,ROLE_USER,ROLE_FINANCE_ADMIN,ROLE_FINANCE_USER,ROLE_MI_USER,ROLE_FINANCE_GROUP
+                /grouping/editGroup*=ROLE_ADMIN,ROLE_USER
+                /grouping/*=ROLE_ADMIN,ROLE_USER,ROLE_FINANCE_ADMIN,ROLE_FINANCE_USER,ROLE_MI_USER,ROLE_FINANCE_GROUP
+                /partnershipgrouping/*=ROLE_ADMIN,ROLE_USER,ROLE_FINANCE_ADMIN,ROLE_FINANCE_USER,ROLE_MI_USER,ROLE_FINANCE_GROUP
+                /listPendingAgreements/*=ROLE_ADMIN
+                /viewAgreementDetail/*=ROLE_ADMIN
+                /approveAgreement/*=ROLE_ADMIN
+                /operatingCycle/confirmOperatingCycle*=ROLE_FINANCE_ADMIN,ROLE_FINANCE_USER,ROLE_FINANCE_GROUP
+                /operatingCycle/confirmUploadCompletion*=ROLE_FINANCE_ADMIN,ROLE_FINANCE_USER
+                /operatingCycle/verifyOperatingCycle*=ROLE_FINANCE_GROUP
+                /operatingCycle/approveOperatingCycle*=ROLE_ADMIN
+                /operatingCycle/approveCycle*=ROLE_ADMIN
+                /operatingCycle/branchList*=ROLE_ADMIN,ROLE_USER,ROLE_MI_USER,ROLE_FINANCE_ADMIN,,ROLE_FINANCE_GROUP
+                /agreementResult/listResults*=ROLE_ADMIN,ROLE_USER,ROLE_MI_USER,ROLE_FINANCE_ADMIN,ROLE_FINANCE_USER,,ROLE_FINANCE_GROUP
+                /agreementResult/listSearchAgrResults*=ROLE_ADMIN,ROLE_USER,ROLE_MI_USER,ROLE_FINANCE_ADMIN,ROLE_FINANCE_USER,,ROLE_FINANCE_GROUP
+                /operatingCycle/viewUploadedGrossData*=ROLE_ADMIN,ROLE_USER,ROLE_FINANCE_ADMIN,ROLE_FINANCE_USER,ROLE_MI_USER,,ROLE_FINANCE_GROUP
+                /operatingCycle/searchUploadedData*=ROLE_ADMIN,ROLE_USER,ROLE_FINANCE_ADMIN,ROLE_FINANCE_USER,ROLE_MI_USER,,ROLE_FINANCE_GROUP
+                /manualUpload/grossNewRefData*=ROLE_FINANCE_ADMIN,ROLE_FINANCE_USER,,ROLE_FINANCE_GROUP
+                /manualUpload/uploadGrossNewData*=ROLE_FINANCE_ADMIN,,ROLE_FINANCE_GROUP
+                /manualUpload/grossCorrectionRefData*=ROLE_USER,ROLE_ADMIN,ROLE_FINANCE_ADMIN,ROLE_FINANCE_USER,,ROLE_FINANCE_GROUP
+                /manualUpload/uploadGrossCorrectionData*=ROLE_ADMIN,ROLE_FINANCE_ADMIN,,ROLE_FINANCE_GROUP
+                /manualUpload/cededCalcRefData*=ROLE_USER,ROLE_ADMIN,ROLE_FINANCE_ADMIN,ROLE_FINANCE_USER,,ROLE_FINANCE_GROUP
+                /manualUpload/uploadCededCalcData*=ROLE_ADMIN
+
+                /a4j.res/*.html*=ROLE_ANONYMOUS,ROLE_ADMIN,ROLE_USER,ROLE_DATA_ADMIN,ROLE_FINANCE_ADMIN,ROLE_FINANCE_USER,ROLE_MI_USER,,ROLE_FINANCE_GROUP
+        <!-- APF-737, OK to remove if not using JSF -->
+                /**/*.html*=ROLE_ADMIN,ROLE_USER,ROLE_DATA_ADMIN,ROLE_FINANCE_ADMIN,ROLE_FINANCE_USER,ROLE_MI_USER,,ROLE_FINANCE_GROUP
+            </value>
+        </property>
+	</bean>
+	<bean id="accessDecisionManager" class="org.acegisecurity.vote.AffirmativeBased">
+        <property name="allowIfAllAbstainDecisions" value="false"/>
+        <property name="decisionVoters">
+   				<list>
+   					<ref local="roleVoter"/>
+				</list>
+        </property>
+    </bean>
+
+<bean id="roleVoter" class="org.acegisecurity.vote.RoleVoter">
+<property name="rolePrefix" value=""/>
+</bean>
+
+	<bean id="authenticationManager" class="org.acegisecurity.providers.ProviderManager">
+		<property name="providers">
+			<list>
+				<ref local="ldapAuthenticationProvider"/>
+				<ref local="anonymousAuthenticationProvider"/>
+				<!--
+				<ref local="rememberMeAuthenticationProvider"/>
+				-->
+			</list>
+		</property>
+	</bean>
+
+        <bean id="initialDirContextFactory" class="org.acegisecurity.ldap.DefaultInitialDirContextFactory">
+                <constructor-arg value="{{ env_vars.ldap_url }}"/>
+                <property name="managerDn" value="orclapplicationcommonname=atrServNetAuthApp"/>
+                <property name="managerPassword" value="{{ vault[app].cabrillo_manager_password }}"/>
+        </bean>
+
+	<bean id="ldapAuthenticationProvider" class="org.acegisecurity.providers.ldap.LdapAuthenticationProvider">
+		<constructor-arg>
+			<bean class="org.acegisecurity.providers.ldap.authenticator.BindAuthenticator">
+				<constructor-arg>
+					<ref local="initialDirContextFactory"/>
+				</constructor-arg>
+				<property name="userDnPatterns">
+					<list>
+						<value>cn={0},cn=internal,cn=Users</value>
+					</list>
+				</property>
+			</bean>
+		</constructor-arg>
+       <constructor-arg>
+           <bean class="com.atradius.cabrillo.webapp.ldap.CabrilloAuthoritiesPopulatorImpl">
+           		<property name="userManager" ref="userManager"/>
+           </bean>
+       </constructor-arg>
+
+	</bean>
+	<!-- Added -->
+
+   <bean id="userSearch" class="org.acegisecurity.ldap.search.FilterBasedLdapUserSearch">
+       <constructor-arg index="0" value=""/>
+       <constructor-arg index="1" value="(cn={0})"/>
+       <constructor-arg index="2" ref="initialDirContextFactory"/>
+       <property name="searchSubtree" value="true"/>
+   </bean>
+
+   <bean id="ldapUserDetailsMapper" class="org.acegisecurity.userdetails.ldap.LdapUserDetailsMapper">
+       <property name="rolePrefix" value=""/>
+   </bean>
+
+	<!-- Fin added -->
+
+	<bean id="anonymousAuthenticationProvider" class="org.acegisecurity.providers.anonymous.AnonymousAuthenticationProvider">
+		<property name="key" value="anonymous"/>
+	</bean>
+	<!-- This bean definition must be available to ApplicationContext.getBean() so StartupListener
+         can look for it and detect if password encryption is turned on or not -->
+	<!-- added -->
+	<!--  <bean id="passwordEncoder" class="org.acegisecurity.providers.encoding.ShaPasswordEncoder"/> -->
+	<bean id="passwordEncoder" class="org.acegisecurity.providers.ldap.authenticator.LdapShaPasswordEncoder"/>
+	<!-- Fin added -->
+	<!-- This bean is optional; it isn't used by any other bean as it only listens and logs -->
+	<bean id="loggerListener" class="org.acegisecurity.event.authentication.LoggerListener"/>
+	<!-- Apply method-level interceptor to userManager bean -->
+	<aop:config>
+		<aop:advisor id="managerSecurity" advice-ref="methodSecurityInterceptor" pointcut="execution(* com.atradius.cabrillo.core.service.UserManager.*(..))"/>
+	</aop:config>
+	<bean id="methodSecurityInterceptor" class="org.acegisecurity.intercept.method.aopalliance.MethodSecurityInterceptor">
+		<property name="authenticationManager" ref="authenticationManager"/>
+	    <property name="accessDecisionManager" ref="accessDecisionManager"/>
+		<property name="objectDefinitionSource">
+			<value>
+                 com.atradius.cabrillo.core.service.UserManager.getUsers=ROLE_DATA_ADMIN
+                 com.atradius.cabrillo.core.service.UserManager.removeUser=ROLE_DATA_ADMIN
+             </value>
+		</property>
+	</bean>
+	<!-- SSL Switching: to use this, configure it in the filterChainProxy bean -->
+	<bean id="channelProcessingFilter" class="org.acegisecurity.securechannel.ChannelProcessingFilter">
+		<property name="channelDecisionManager" ref="channelDecisionManager"/>
+		<property name="filterInvocationDefinitionSource">
+			<value>
+                PATTERN_TYPE_APACHE_ANT
+                /dataAdmin/**=REQUIRES_SECURE_CHANNEL
+                /login*=REQUIRES_SECURE_CHANNEL
+                /j_security_check*=REQUIRES_SECURE_CHANNEL
+                /saveUser.html*=REQUIRES_SECURE_CHANNEL
+                /**=REQUIRES_INSECURE_CHANNEL
+            </value>
+		</property>
+	</bean>
+	<bean id="channelDecisionManager" class="org.acegisecurity.securechannel.ChannelDecisionManagerImpl">
+		<property name="channelProcessors">
+			<list>
+				<bean class="org.acegisecurity.securechannel.SecureChannelProcessor"/>
+				<bean class="org.acegisecurity.securechannel.InsecureChannelProcessor"/>
+			</list>
+		</property>
+	</bean>
+</beans>

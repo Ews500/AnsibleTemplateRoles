@@ -1,0 +1,20 @@
+- name: Change Datasource for Cluster on Deployment Manager
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  block:
+    - name: Edit password for JAASAuthData
+      no_log: false # To avoid printing user/pw in output
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP
+        -c "AdminTask.modifyAuthDataEntry('[-alias {{ jdbc_datasource.alias }}
+        -user {{ jdbc_datasource.user }} -password {{ jdbc_datasource.password }}]')
+        AdminConfig.save()"
+      register: jaas_auth_edition
+      changed_when: jaas_auth_edition.rc == 0
+      failed_when: jaas_auth_edition.rc != 0 and 'Password is not changed' in jaas_auth_edition.stdout
+
+    - name: Debug JAASAuthData edition
+      no_log: false # To avoid printing user/pw in output
+      ansible.builtin.debug:
+        msg: "JAASAuthData for {{ jdbc_datasource.alias }}: {{ jaas_auth_edition.stdout }}"
+      when: jaas_auth_edition is defined

@@ -1,0 +1,24 @@
+profile_name: "{{ env_vars.profile_name }}"
+wsadmin_path: "{{ was_path }}/profiles/{{ env_vars.profile_name }}/bin"
+profile_dir: "{{ was_path }}/profiles/{{ env_vars.profile_name }}"
+java_dir: "{{ was_path }}/java/8.0"
+cert_path: "/tmp/was_ssl_certs/{{ ansible_hostname }}"
+
+# LOCAL (repo) source under role's files
+certs_src_dir: "certs/{{ ansible_hostname }}"
+cer_file: "{{ ansible_fqdn }}.cer"
+pfx_file: "{{ ansible_fqdn }}.pfx"   # if you still use pfx import
+key_file: "key.p12"
+client_trust_file: "trust.p12"
+
+ssl_vars:
+  newcertalias: "{{ ansible_fqdn }}"
+  nodekeystore: NodeDefaultKeyStore
+  nodetruststore: NodeDefaultTrustStore
+  storetype: pkcs12
+  encrypsize: 4096
+  algorithm: SHA256withRSA
+  org: Atradius
+  dept: Atradius-Web
+  city: Cardiff
+  country: GB

@@ -1,0 +1,43 @@
+---
+
+- name: Create /sysman/operators and /var/log/websphere
+  tags: create_dirs
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: root
+    group: root
+    mode: '0755'
+    state: directory
+  with_items:
+    - "{{ sysman_dir }}"
+    - "{{ log_dir }}"
+
+- name: Template start_app_appliation_servers
+  tags: all_appservers
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ sysman_dir }}/{{ item }}"
+    owner: root
+    group: root
+    mode: "0755"
+  with_items:
+    - start_websphere_all_appservers
+    - stop_websphere_all_appservers
+
+- name: Loop over group_names and create sysman scripts
+  ansible.builtin.include_tasks: create.yml
+  loop: "{{ group_names }}"
+  loop_control:
+    loop_var: app_group
+
+- name: Template start|stop_env_app_appliation_servers
+  tags: all_env_applications
+  ansible.builtin.template:
+    src: "{{ item }}_websphere_all_env_applications.j2"
+    dest: "{{ sysman_dir }}/{{ item }}_websphere_all_{{ env_code | lower }}_applications"
+    owner: root
+    group: root
+    mode: "0755"
+  with_items:
+    - start
+    - stop

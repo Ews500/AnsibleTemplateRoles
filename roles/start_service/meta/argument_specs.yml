@@ -1,0 +1,22 @@
+# roles/start_service/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/start_service/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the start_service role
+    description:
+      - This is the main entrypoint for the C(start_service) role.
+      - Starts WebSphere Application Server standalone services using systemctl.
+      - Validates that the application is standalone before proceeding.
+      - Sets service name based on application configuration variables.
+      - Verifies service started successfully.
+    version_added: 1.0.0
+    author:
+      - Josh Groves-Waller (@GBJGRO3)
+    options:
+      app:
+        type: "str"
+        required: true
+        description:
+          - "Application name to start"
+          - "Must match application configuration"

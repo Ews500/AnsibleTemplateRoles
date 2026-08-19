@@ -1,0 +1,3 @@
+iim_install_location: "/app/InstallationManager"
+iim_data_location: "/app/InstallationManagerData"
+imshared_location: "/app/IMShared"

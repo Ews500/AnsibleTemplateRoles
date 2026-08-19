@@ -1,0 +1,49 @@
+- name: Jython script to delete JDBC Providers at Server scope
+  ansible.builtin.copy:
+    dest: /tmp/delete_jdbc_server.py
+    mode: '0644'
+    content: |
+      cellName   = "{{ env_vars.cell_name }}"
+      nodeName   = "{{ node_name | default(env_vars.node_name) }}"
+      serverName = "{{ env_vars.server_name }}"
+      prefix     = "{{ jdbc_delete_name_prefix | default('', true) }}"
+
+      # Get the Server config ID directly using full path
+      srv = AdminConfig.getid('/Cell:%s/Node:%s/Server:%s/' % (cellName, nodeName, serverName))
+      if not srv:
+          print "WARN: Server %s not found under %s/%s; nothing to delete" % (serverName, cellName, nodeName)
+      else:
+          deleted = 0
+          providers = [x for x in AdminConfig.list('JDBCProvider', srv).splitlines() if x]
+          for p in providers:
+              name = AdminConfig.showAttribute(p, 'name') or ''
+              if (not prefix) or name.startswith(prefix):
+                  # Delete DataSources under provider first (safer)
+                  for ds in [d for d in AdminConfig.list('DataSource', p).splitlines() if d]:
+                      AdminConfig.remove(ds)
+                  AdminConfig.remove(p)
+                  deleted += 1
+          print "Deleted at Server %s: %d" % (serverName, deleted)
+      AdminConfig.save()
+
+- name: Execute delete JDBC Providers script
+  ansible.builtin.shell: >
+    {{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -f /tmp/delete_jdbc_server.py
+  register: delete_server_jdbc
+  changed_when: >
+    (
+      (
+        delete_server_jdbc.stdout_lines
+        | reject('search', '^WASX')
+        | list
+        | join('\n')
+        | regex_search('Deleted at Server .*: ([0-9]+)')
+        | default('0')
+        | int
+      ) > 0
+    )
+  failed_when: delete_server_jdbc.rc != 0
+
+- name: Show delete summary
+  ansible.builtin.debug:
+    var: delete_server_jdbc.stdout

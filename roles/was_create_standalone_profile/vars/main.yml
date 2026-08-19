@@ -1,0 +1,58 @@
+---
+profile_dir: "{{ was_path }}/profiles/{{ env_vars.profile_name }}"
+
+jdbc_provider_list:
+  - name: "Oracle JDBC Driver"
+    provider_type: "Oracle JDBC Driver"
+    db_type: "Oracle"
+    impl_type: "Connection pool data source"
+    impl_class_name: "oracle.jdbc.pool.OracleConnectionPoolDataSource"
+    classpath: "[${ORACLE_JDBC_DRIVER_PATH}/ojdbc8.jar]"
+    native_path: "/app/OracleDriver"
+    was_var_name: "ORACLE_JDBC_DRIVER_PATH"
+    was_var_desc: "Oracle JDBC driver path"
+
+app_uninstall_list:
+  - DefaultApplication
+  - ivtApp
+  - query
+
+profile_port_list:
+  - endpoint_name: WC_adminhost
+    port_value: "{{ env_vars.was_admin_port }}"
+  - endpoint_name: WC_adminhost_secure
+    port_value: "{{ env_vars.was_admin_port_secure }}"
+  - endpoint_name: WC_defaulthost
+    port_value: "{{ env_vars.was_http_port }}"
+  - endpoint_name: WC_defaulthost_secure
+    port_value: "{{ env_vars.was_https_port }}"
+  - endpoint_name: BOOTSTRAP_ADDRESS
+    port_value: "{{ env_vars.was_bootstrap_port }}"
+  - endpoint_name: SOAP_CONNECTOR_ADDRESS
+    port_value: "{{ env_vars.was_soap_port }}"
+
+virtual_host_list:
+  - name: admin_host
+    ports:
+      - port_value: "{{ env_vars.was_admin_port }}"
+        desc: "WC_adminhost"
+      - port_value: "{{ env_vars.was_admin_port_secure }}"
+        desc: "WC_adminhost_secure"
+  - name: default_host
+    ports:
+      - port_value: 80
+        desc: "Web server HTTP default port"
+      - port_value: 443
+        desc: "Web server HTTPS default port"
+      - port_value: 8000
+        desc: "Web server HTTP port"
+      - port_value: 8004
+        desc: "Web server HTTPS port"
+      - port_value: "{{ env_vars.was_http_port }}"
+        desc: "WC_defaulthost"
+      - port_value: "{{ env_vars.was_https_port }}"
+        desc: "WC_defaulthost_secure"
+
+datasource_validation_script:
+  src: datasource_validation_config.jython.j2
+  dest: /tmp/datasource_validation_config.jython

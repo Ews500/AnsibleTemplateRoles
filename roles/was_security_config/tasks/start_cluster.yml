@@ -1,0 +1,37 @@
+- name: Check and Start WebSphere Cluster on Deployment Manager
+  tags: start_cluster
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  block:
+    - name: Start WebSphere Cluster if stopped
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython
+        -host {{ env_vars.dmgr_host }} -port {{ env_vars.dmgr_soap_port }}
+        -c "cluster = AdminControl.completeObjectName('{{ cluster_query_str }}');
+        print 'ClusterMBean=' + str(cluster);
+        AdminControl.invoke(cluster, 'start');
+        print 'StartAction=StartIssued';
+        "
+      register: cluster_start_output
+      changed_when: "'StartAction=StartIssued' in cluster_start_output.stdout"
+      failed_when: cluster_start_output.rc != 0
+
+    # - name: Debug Start output
+    #   ansible.builtin.debug:
+    #     var: cluster_start_output.stdout_lines
+
+    - name: Check cluster status AFTER Start
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh  -conntype SOAP -lang jython
+        -host {{ env_vars.dmgr_host }} -port {{ env_vars.dmgr_soap_port }}
+        -c "
+        cluster = AdminControl.completeObjectName('{{ cluster_query_str }}');
+        print 'ClusterMBean=' + str(cluster);
+        state = cluster and AdminControl.getAttribute(cluster, 'state') or None;
+        print 'StateAfter=' + str(state);
+        "
+      register: cluster_status_after_start
+      changed_when: false
+      failed_when: >
+        cluster_status_after_start.rc != 0
+        or 'StateAfter=running' in cluster_status_after_start.stdout

@@ -1,0 +1,15 @@
+---
+- name: Recursively remove Installation_Manager directory
+  ansible.builtin.file:
+    path: "{{ iim_install_location }}"
+    state: absent
+
+- name: Recursively remove Installation_Manager Data directory
+  ansible.builtin.file:
+    path: "{{ iim_data_location }}"
+    state: absent
+
+- name: Recursively remove IMShared directory
+  ansible.builtin.file:
+    path: "{{ imshared_location }}"
+    state: absent

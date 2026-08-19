@@ -1,0 +1,143 @@
+---
+# Remove systemd services for WebSphere Application Server
+# Only removes services when app is NOT dmgr, nd, or ihs
+
+- name: Debug application
+  tags: always
+  ansible.builtin.debug:
+    msg:
+      - "Application: {{ app }}"
+      - "Common app group: {{ app_vars.common_app_group | default('N/A - using app name') }}"
+      - "Service name: was_{{ env_code | lower }}{{ app_vars.common_app_group | default(app | lower) }}.service"
+
+- name: Remove WebSphere standalone application server service
+  tags: remove_service
+  block:
+    - name: Pre-removal checks and validation
+      tags: pre_checks
+      block:
+        - name: Check if service exists
+          become: true
+          become_user: root
+          ansible.builtin.stat:
+            path: "/etc/systemd/system/was_{{ env_code | lower }}{{ app_vars.common_app_group | default(app | lower) }}.service"
+          register: service_file_exists
+
+        - name: Get service status if it exists
+          become: true
+          become_user: root
+          ansible.builtin.systemd:
+            name: "was_{{ env_code | lower }}{{ app_vars.common_app_group | default(app | lower) }}.service"
+          register: service_status
+          failed_when: false
+          when: service_file_exists.stat.exists
+
+        - name: Display pre-removal service information
+          ansible.builtin.debug:
+            msg:
+              - "Service file exists: {{ service_file_exists.stat.exists }}"
+              - "Service status: {{ service_status.status.ActiveState | default('N/A') }}"
+              - "Service enabled: {{ service_status.status.UnitFileState | default('N/A') }}"
+          when: service_file_exists.stat.exists
+
+    - name: Service removal - standalone app server
+      tags: systemd
+      block:
+        - name: Stop and disable standalone app server service
+          become: true
+          become_user: root
+          ansible.builtin.systemd:
+            name: "was_{{ env_code | lower }}{{ app_vars.common_app_group | default(app | lower) }}.service"
+            state: stopped
+            enabled: false
+            daemon_reload: true
+          failed_when: false
+          register: service_stop_result
+
+        - name: Debug service stop result
+          ansible.builtin.debug:
+            msg:
+              - "Service name: was_{{ env_code | lower }}{{ app_vars.common_app_group | default(app | lower) }}.service"
+              - "Stop result: {{ service_stop_result.msg | default('Success') }}"
+              - "Service was present: {{ not service_stop_result.failed }}"
+
+        - name: Remove service unit file - standalone app server
+          become: true
+          become_user: root
+          ansible.builtin.file:
+            path: "/etc/systemd/system/was_{{ env_code | lower }}{{ app_vars.common_app_group | default(app | lower) }}.service"
+            state: absent
+          register: file_removal_result
+
+        - name: Remove webadmn sudo permissions - standalone app server
+          become: true
+          become_user: root
+          ansible.builtin.blockinfile:
+            path: /etc/sudoers.d/03-webteam
+            marker: "## {mark} was_{{ env_code | lower }}{{ app_vars.common_app_group | default(app | lower) }}.service ANSIBLE MANAGED BLOCK"
+            state: absent
+          failed_when: false
+
+        - name: Remove Ops team sudo permissions - standalone app server
+          become: true
+          become_user: root
+          ansible.builtin.blockinfile:
+            path: /etc/sudoers.d/04-opsteam
+            marker: "## {mark} was_{{ env_code | lower }}{{ app_vars.common_app_group | default(app | lower) }}.service ANSIBLE MANAGED BLOCK"
+            state: absent
+          failed_when: false
+
+        - name: Reload systemd daemon after service removal
+          become: true
+          become_user: root
+          ansible.builtin.systemd:
+            daemon_reload: true
+
+        - name: Verify service removal
+          become: true
+          become_user: root
+          ansible.builtin.systemd:
+            name: "was_{{ env_code | lower }}{{ app_vars.common_app_group | default(app | lower) }}.service"
+          register: service_check
+          failed_when: false
+
+        - name: Display service removal confirmation
+          ansible.builtin.debug:
+            msg:
+              - "Service unit file removed: {{ file_removal_result.changed }}"
+              - "Service verification: {{ 'Service not found (successfully removed)' if service_check.status.LoadState == 'not-found' else 'Service still exists' }}" # noqa yaml[line-length]
+
+    - name: Post-removal verification and cleanup
+      tags: verification
+      block:
+        - name: Verify service unit file is removed
+          become: true
+          become_user: root
+          ansible.builtin.stat:
+            path: "/etc/systemd/system/was_{{ env_code | lower }}{{ app_vars.common_app_group | default(app | lower) }}.service"
+          register: service_file_check
+
+        - name: Display final verification results
+          ansible.builtin.debug:
+            msg:
+              - "Service file removed: {{ not service_file_check.stat.exists }}"
+              - "Service not in systemd: {{ service_check.status.LoadState == 'not-found' }}"
+              - "Removal successful: {{ not service_file_check.stat.exists and service_check.status.LoadState == 'not-found' }}"
+
+        - name: Final cleanup - remove any remaining service links
+          become: true
+          become_user: root
+          ansible.builtin.find:
+            paths:
+              - /etc/systemd/system/multi-user.target.wants
+            patterns: "was_{{ env_code | lower }}{{ app_vars.common_app_group | default(app | lower) }}.service"
+          register: service_links
+
+        - name: Remove service symlinks
+          become: true
+          become_user: root
+          ansible.builtin.file:
+            path: "{{ item.path }}"
+            state: absent
+          loop: "{{ service_links.files }}"
+          when: service_links.files | length > 0

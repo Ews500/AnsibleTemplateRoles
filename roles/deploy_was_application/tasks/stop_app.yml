@@ -1,0 +1,27 @@
+- name: Copy stop script template
+  ansible.builtin.template:
+    src: "{{ deployment_vars.stop_script_name }}"
+    dest: "{{ deploy_dir.path }}/{{ deployment_vars.stop_script_name }}"
+    mode: "0600"
+
+- name: Set wsadmin_stop_cmd fact
+  ansible.builtin.set_fact:
+    wsadmin_stop_cmd: "{{ deployment_vars.wsadmin_path }}/wsadmin.sh -conntype soap \
+      -host {{ soap_host | default('localhost') }} \
+      -port {{ deployment_vars.was_soap_port }} \
+      -lang jython \
+      -f {{ deploy_dir.path }}/{{ deployment_vars.stop_script_name }}"
+
+- name: Print wsadmin command to execute
+  ansible.builtin.debug:
+    msg: "{{ wsadmin_stop_cmd }}"
+
+- name: Stop application (Jython) # noqa no-changed-when
+  ansible.builtin.command:
+    cmd: "{{ wsadmin_stop_cmd }}"
+  register: stop_output
+  failed_when: stop_output.rc != 0
+
+- name: Stop app output
+  ansible.builtin.debug:
+    msg: "{{ stop_output.stdout }}"

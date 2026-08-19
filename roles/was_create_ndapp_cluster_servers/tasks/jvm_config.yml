@@ -1,0 +1,27 @@
+- name: Set initial heap size and maximum heap size  # noqa yaml[line-length]
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c
+    "AdminConfig.modify(AdminConfig.list('JavaVirtualMachine',
+    AdminConfig.list('Server', AdminConfig.getid('/Cell:{{ env_vars.cell_name }}/Node:{{ ansible_hostname }}Node01/Server:{{ env_vars.server_name }}/'))),
+    '[[initialHeapSize {{ env_vars.initial_heap_size | default(1024) }}][maximumHeapSize {{ env_vars.maximum_heap_size | default(2048) }}]]')"
+  changed_when: true
+
+- name: Save the WebSphere configuration
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c 'AdminConfig.save()'"
+  changed_when: true
+
+- name: JVM Heap Size Configuration
+  ansible.builtin.debug:
+    msg: "JVM Initial and Max Size is Set to {{ env_vars.initial_heap_size | default(1024) }} MB and {{ env_vars.maximum_heap_size | default(2048) }} MB"
+
+- name: Perform Node Sync
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython -c 'AdminNodeManagement.syncActiveNodes()'"
+  register: sync_node_output
+  changed_when: true
+
+- name: Node Synced status
+  ansible.builtin.debug:
+    var: sync_node_output.stdout
+  when: sync_node_output is defined

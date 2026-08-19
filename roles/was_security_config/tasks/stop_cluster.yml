@@ -1,0 +1,33 @@
+- name: Check and Stop WebSphere Cluster on Deployment Manager
+  tags: stop_cluster
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  block:
+    - name: Stop WebSphere Cluster if running
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -conntype SOAP -lang jython
+        -host {{ env_vars.dmgr_host }} -port {{ env_vars.dmgr_soap_port }}
+        -c "cluster = AdminControl.completeObjectName('{{ cluster_query_str }}');
+        print 'ClusterMBean=' + str(cluster);
+        AdminControl.invoke(cluster, 'stop');
+        print 'StopAction=StopIssued';
+        "
+      register: cluster_stop_output
+      changed_when: "'StopAction=StopIssued' in cluster_stop_output.stdout"
+      failed_when: cluster_stop_output.rc != 0
+
+    - name: Check cluster status AFTER stop
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh  -conntype SOAP -lang jython
+        -host {{ env_vars.dmgr_host }} -port {{ env_vars.dmgr_soap_port }}
+        -c "
+        cluster = AdminControl.completeObjectName('{{ cluster_query_str }}');
+        print 'ClusterMBean=' + str(cluster);
+        state = cluster and AdminControl.getAttribute(cluster, 'state') or None;
+        print 'StateAfter=' + str(state);
+        "
+      register: cluster_status_after_stop
+      changed_when: false
+      failed_when: >
+        cluster_status_after_stop.rc != 0
+        or 'StateAfter=running' in cluster_status_after_stop.stdout

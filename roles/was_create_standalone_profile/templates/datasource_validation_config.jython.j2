@@ -1,0 +1,21 @@
+ds=AdminConfig.getid('/Server:{{ env_vars.server_name }}/JDBCProvider:{{ jdbc_datasource.provider_name }}/DataSource:{{ jdbc_datasource.db_name }}/')
+print('DS:',ds)
+ps=AdminConfig.showAttribute(ds,'propertySet')
+print('PropertySet:',ps)
+props=AdminConfig.list('J2EEResourceProperty',ps).splitlines()
+print('Found properties:', len(props))
+for p in props:
+    name=AdminConfig.showAttribute(p,'name')
+    print('Processing property:', name)
+    if name=='validateNewConnection':
+        AdminConfig.modify(p,[['value','{{ jdbc_datasource.validate_new_connection }}']])
+    if name=='validateNewConnectionRetryCount':
+        AdminConfig.modify(p,[['value','{{ jdbc_datasource.retry_count }}']])
+    if name=='validateNewConnectionRetryInterval':
+        AdminConfig.modify(p,[['value','{{ jdbc_datasource.retry_interval }}']])
+    if name=='validateNewConnectionTimeout':
+        AdminConfig.modify(p,[['value','{{ jdbc_datasource.jdbc_validation_timeout }}']])
+    if name=='preTestSQLString':
+        AdminConfig.modify(p,[['value','{{ jdbc_datasource.pre_test_sql_string }}']])
+AdminConfig.save()
+print('SUCCESS: validation properties updated')

@@ -1,0 +1,83 @@
+- name: Manage Merging of Plugins
+  tags: merge_plugins
+  delegate_to: "{{ env_vars.standalone_vars | default(omit) }}"
+  run_once: "{{ 'true' if env_vars.standalone_vars is defined else 'false' }}"
+  block:
+    - name: Create support directories
+      ansible.builtin.file:
+        path: "{{ tmp_dir }}"
+        state: directory
+        mode: "0755"
+        owner: webadmn
+        group: webadmn
+
+    - name: Manage Plugins from Web Server
+      tags: bkup_ihs_plugins
+      delegate_to: "{{ env_vars.ihs_vars | default(omit) }}"
+      run_once: "{{ 'true' if env_vars.ihs_vars is defined else 'false' }}"
+      block:
+        - name: Backup of Plugin File on Web Server
+          tags: backup_ihs_plugin_file
+          ansible.builtin.copy:
+            src: "{{ ihs_plg_config }}/plugin-cfg.xml"
+            dest: "{{ ihs_plg_config }}/plugin-cfg.xml-{{ lookup('pipe', 'date +%Y%m%d') }}"
+            remote_src: true
+            mode: '0755'
+
+        - name: Transfer Plugin File from Web Server to Application Server for Merge
+          ansible.builtin.copy:
+            src: "{{ ihs_plg_config }}/plugin-cfg.xml-{{ lookup('pipe', 'date +%Y%m%d') }}"
+            dest: "{{ tmp_dir }}"
+            remote_src: true
+            mode: '0755'
+
+    - name: Copy Newly created profile plugin to temprary directory
+      ansible.builtin.copy:
+        src: "{{ was_config_vars.profile_dir }}/config/cells/{{ env_vars.cell_name }}/nodes//ltwas001ihs-node/servers/webserver1/plugin-cfg.xml"
+        dest: "{{ tmp_dir }}"
+        mode: '0755'
+
+    - name: Merge the new plugin with server node name
+      ansible.builtin.command: >
+        {{ was_path }}/bin/pluginCfgMerge.sh -l {{ tmp_dir }}/plugin-cfg.xml {{ tmp_dir }}/plugin-cfg.xml
+        {{ tmp_dir }}/plugin-cfg.xml-{{ lookup('pipe', 'date +%Y%m%d') }}
+        {{ tmp_dir }}/merged-plugin-cfg.xml-{{ lookup('pipe', 'date +%Y%m%d') }}
+      register: node_name_output
+      changed_when: false
+      failed_when: node_name_output.rc != 0
+
+- name: Trnasfer the merged Plugins from App Server
+  tags: transfer_ihs_plugins
+  delegate_to: "{{ env_vars.ihs_vars | default(omit) }}"
+  run_once: "{{ 'true' if env_vars.ihs_vars is defined else 'false' }}"
+  block:
+
+    - name: Transfer Merged Plugin File from Application Server to Web Server
+      tags: copy_plugin_file
+      ansible.builtin.copy:
+        src: "{{ tmp_dir }}"
+        dest: "{{ ihs_plg_config }}"
+        mode: '0755'
+
+    - name: Stop WebServer Services
+      tags: stop_ihs
+      ansible.builtin.include_tasks: stop_ihs_services.yml
+
+    - name: Start WebServer Services
+      tags: start_ihs
+      ansible.builtin.include_tasks: start_ihs_services.yml
+
+    - name: Copy Newly Transfered Plugin File from Primary Web Server to Secondary Web Server
+      tags: copy_plugin_file
+      ansible.builtin.copy:
+        src: "{{ ihs_plg_config }}"
+        dest: "{{ ihs_plg_config }}"
+        mode: '0755'
+
+    - name: Stop WebServer Services on Secondary Web Server
+      tags: stop_ihs
+      ansible.builtin.include_tasks: stop_ihs_services.yml
+
+    - name: Start WebServer Services on Secondary Web Server
+      tags: start_ihs
+      ansible.builtin.include_tasks: start_ihs_services.yml

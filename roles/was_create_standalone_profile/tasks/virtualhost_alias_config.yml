@@ -1,0 +1,39 @@
+- name: Copy delete_virtualhost.props template
+  ansible.builtin.template:
+    src: "delete_virtualhost.props"
+    dest: "{{ profile_dir }}/delete_vhost_{{ virtual_host.name }}.props"
+    mode: "0600"
+
+- name: Delete Virtual Host
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c "
+    AdminTask.deleteConfigProperties('[-propertiesFileName {{ profile_dir }}/delete_vhost_{{ virtual_host.name }}.props]') "
+  changed_when: vhost_deletion.rc == 0
+  failed_when: vhost_deletion.rc != 0 and 'ADMG0660E' not in vhost_deletion.stdout
+  register: vhost_deletion
+
+- name: Save the WebSphere configuration
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c 'AdminConfig.save()'"
+  when: vhost_deletion is defined and vhost_deletion.rc == 0
+  changed_when: true
+
+- name: Copy create_virtualhost.props template
+  ansible.builtin.template:
+    src: "create_virtualhost.props"
+    dest: "{{ profile_dir }}/create_vhost_{{ virtual_host.name }}.props"
+    mode: "0600"
+
+- name: Create Virtual Host
+  ansible.builtin.command: >
+    {{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c "
+    AdminTask.applyConfigProperties('[-propertiesFileName {{ profile_dir }}/create_vhost_{{ virtual_host.name }}.props]') "
+  changed_when: vhost_creation.rc == 0
+  failed_when: vhost_creation.rc != 0 and 'ADMG0660E' not in vhost_creation.stdout
+  register: vhost_creation
+
+- name: Save the WebSphere configuration
+  ansible.builtin.command:
+    cmd: "{{ profile_dir }}/bin/wsadmin.sh -conntype NONE -lang jython -c 'AdminConfig.save()'"
+  when: vhost_creation is defined and vhost_creation.rc == 0
+  changed_when: true

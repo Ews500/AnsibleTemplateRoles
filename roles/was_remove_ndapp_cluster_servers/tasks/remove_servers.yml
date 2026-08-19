@@ -1,0 +1,90 @@
+# TASKS to be executed on dmgr host
+- name: Check cluster existence and members
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  block:
+    - name: List cluster members
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP -c "
+        AdminConfig.list('ClusterMember', AdminConfig.getid( '/Cell:{{ env_vars.cell_name }}/ServerCluster:{{ env_vars.cluster_name }}/'))"
+      register: cluster_member_check
+      changed_when: false
+      failed_when: false
+
+    - name: Set facts based on cluster check
+      ansible.builtin.set_fact:
+        cluster_has_members: "{{ cluster_member_check.rc == 0 and cluster_member_check.stdout | length > 0 }}"
+        server_exists_in_cluster: "{{ cluster_member_check.rc == 0 and env_vars.server_name in cluster_member_check.stdout }}"
+
+    - name: Debug cluster state
+      ansible.builtin.debug:
+        msg:
+          - "Cluster: {{ env_vars.cluster_name }}"
+          - "Has members: {{ cluster_has_members }}"
+          - "Server '{{ env_vars.server_name }}' exists in cluster: {{ server_exists_in_cluster }}"
+          - "{{ 'No members found in cluster' if not cluster_has_members else 'Current members:' }}"
+          - "{{ cluster_member_check.stdout if cluster_has_members else '' }}"
+
+- name: Stop cluster member servers
+  when: server_exists_in_cluster
+  block:
+    - name: Stop cluster member servers on each node
+      ansible.builtin.shell: >
+        timeout 90 {{ was_path }}/profiles/{{ env_vars.profile_name }}/bin/stopServer.sh {{ env_vars.server_name }}
+      register: server_stop_output
+      failed_when: "server_stop_output.rc != 0 and 'appears to be stopped' not in server_stop_output.stdout"
+      changed_when: "'stopped' in server_stop_output.stdout or 'appears to be stopped' in server_stop_output.stdout"
+
+    - name: Display server shutdown status
+      ansible.builtin.debug:
+        msg: "Cluster member server '{{ env_vars.server_name }}' stopped on all nodes"
+
+    - name: Set fact that servers have been shutdown
+      ansible.builtin.set_fact:
+        servers_shutdown: true
+  rescue:
+    - name: Check for server PIDs
+      ansible.builtin.shell: "set -o pipefail && ps -fu webadmn | grep java | grep -v grep | egrep -E -- '{{ was_path }}/profiles/{{ env_vars.profile_name }}/servers/{{ env_vars.server_name }}/' | awk {'print $2'}" # noqa yaml[line-length]
+      register: server_pids
+      changed_when: false
+      failed_when: false
+
+    - name: Kill server PIDs if found
+      ansible.builtin.command: >
+        kill -9 {{ item }}
+      loop: "{{ server_pids.stdout_lines }}"
+      when: server_pids.stdout_lines | length > 0
+      changed_when: true
+
+    - name: Debug server PIDs killed
+      ansible.builtin.debug:
+        msg: "Killed server PIDs for '{{ env_vars.server_name }}': {{ server_pids.stdout_lines | join(', ') }}"
+      when: server_pids.stdout_lines | length > 0
+
+    - name: Set fact that servers have been shutdown
+      ansible.builtin.set_fact:
+        servers_shutdown: true
+
+- name: Run cluster member removal
+  delegate_to: "{{ env_vars.dmgr_host }}"
+  run_once: true
+  when: server_exists_in_cluster and servers_shutdown | default(false)
+  block:
+    - name: Remove cluster member from each host
+      ansible.builtin.command: >
+        {{ dmgr_profile_dir }}/bin/wsadmin.sh -lang jython -conntype SOAP -c "
+        AdminTask.deleteClusterMember('[-clusterName {{ env_vars.cluster_name }}
+        -memberName {{ env_vars.server_name }}
+        -memberNode {{ item.split('.')[0] }}Node01]');
+        AdminConfig.save();
+        AdminNodeManagement.syncActiveNodes()"
+      register: cluster_member_removal
+      changed_when: cluster_member_removal.rc == 0
+      loop: "{{ groups[app | lower] | default([]) }}"
+      loop_control:
+        label: "Removing from {{ item.split('.')[0] }}Node01"
+
+    - name: Debug cluster member removal
+      ansible.builtin.debug:
+        msg: "Cluster members '{{ env_vars.server_name }}' removed from all cluster hosts"
+      when: cluster_member_removal.results | selectattr('rc', 'equalto', 0) | list | length > 0

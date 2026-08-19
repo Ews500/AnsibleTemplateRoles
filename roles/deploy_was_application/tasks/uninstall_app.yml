@@ -1,0 +1,27 @@
+- name: Copy uninstall script template
+  ansible.builtin.template:
+    src: "{{ deployment_vars.uninstall_script_name }}"
+    dest: "{{ deploy_dir.path }}/{{ deployment_vars.uninstall_script_name }}"
+    mode: "0600"
+
+- name: Set wsadmin_uninstall_cmd fact
+  ansible.builtin.set_fact:
+    wsadmin_uninstall_cmd: "{{ deployment_vars.wsadmin_path }}/wsadmin.sh -conntype soap \
+      -host {{ soap_host | default('localhost') }} \
+      -port {{ deployment_vars.was_soap_port }} \
+      -lang jython \
+      -f {{ deploy_dir.path }}/{{ deployment_vars.uninstall_script_name }}"
+
+- name: Print wsadmin command to execute
+  ansible.builtin.debug:
+    msg: "{{ wsadmin_uninstall_cmd }}"
+
+- name: Uninstall application (Jython) # noqa no-changed-when
+  ansible.builtin.command:
+    cmd: "{{ wsadmin_uninstall_cmd }}"
+  register: uninstall_output
+  failed_when: uninstall_output.rc != 0
+
+- name: Uninstall app output
+  ansible.builtin.debug:
+    msg: "{{ uninstall_output.stdout }}"

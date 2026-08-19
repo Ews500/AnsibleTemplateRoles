@@ -1,0 +1,15 @@
+- name: Check if the profile directory exists
+  tags: check_profile
+  ansible.builtin.stat:
+    path: "{{ profile_dir }}"
+  register: profile_exists
+
+- name: Set profile_exists_flag based on profile existence
+  tags: check_profile
+  ansible.builtin.set_fact:
+    profile_exists_flag: "{{ profile_exists.stat.exists }}"
+
+- name: Remove profile if it exists
+  tags: remove_profile
+  ansible.builtin.include_tasks: remove_profile.yml
+  when: profile_exists_flag

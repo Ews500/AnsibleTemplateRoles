@@ -1,0 +1,14 @@
+iim_install_location: /app/InstallationManager
+iim_data_location: /app/InstallationManagerData
+imshared_location: /app/IMShared
+
+# Base shared directory
+shared_mount: "/nfstemp/was_binaries"
+
+# Define subdirectories for different binary types
+binary_dirs:
+  iim: "{{ shared_mount }}/iim"
+  was: "{{ shared_mount }}/was"
+  was_fixpacks: "{{ shared_mount }}/was_fixpacks"
+  java_sdk: "{{ shared_mount }}/java_sdk"
+  java_sdk_fixpacks: "{{ shared_mount }}/java_sdk_fixpacks"

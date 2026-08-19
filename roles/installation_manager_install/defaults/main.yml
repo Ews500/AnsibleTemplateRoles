@@ -1,0 +1,14 @@
+iim_install_location: "/app/InstallationManager"
+iim_data_location: "/app/InstallationManagerData"
+imshared_location: "/app/IMShared"
+
+iim_bin_file: "agent.installer.linux.gtk.x86_64_1.9.2002.20220323_1321.zip"
+iim_bin_file_sha256: "af17aeb27f555e5334869e7df90f966f7cc3b01d7b06a2ecccbe25d5e767e038"
+iim_version: "1.9.2002.20220323_1321"
+
+# Base shared directory
+shared_mount: "/nfstemp/was_binaries"
+
+# Define subdirectories for different binary types
+binary_dirs:
+  iim: "{{ shared_mount }}/iim"

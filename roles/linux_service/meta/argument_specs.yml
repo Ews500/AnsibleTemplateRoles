@@ -1,0 +1,27 @@
+# roles/linux_service/meta/argument_specs.yml
+---
+argument_specs:
+  # roles/linux_service/tasks/main.yml entry point
+  main:
+    short_description: Main entry point for the linux_service role
+    description:
+      - This is the main entrypoint for the C(linux_service) role.
+      - Creates and manages Linux systemd services for WebSphere profiles and servers.
+      - Generates systemd unit files, enables services, and manages their state.
+      - Supports customization of user, group, and service options.
+      - Ensures standardized service management for WebSphere environments.
+    version_added: 1.0.0
+    author:
+      - Daniel Benitez (@ESDBEN2)
+    options:
+      app:
+        type: "str"
+        required: true
+        description:
+          - "Application name for which the service is being created."
+          - "Check application names in environments/<env_code>/hosts files."
+      env_code:
+        type: "str"
+        required: true
+        description:
+          - "Environment code for the service."
