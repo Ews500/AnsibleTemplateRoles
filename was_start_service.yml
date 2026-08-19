@@ -1,0 +1,58 @@
+---
+# was_start_service.yml
+# Description: Start a service in WebSphere Application Server
+# Author: Daniel Benitez Aguila (@ESDBEN2)
+# Created: 2024-08-19
+# Last Modified: 2025-08-05
+- name: Start WebSphere Application Server Service
+  hosts: "{{ app | default('null') }}"
+  tags: always
+  gather_subset:
+    - '!all'
+    - 'min'
+    - 'network'
+
+  # Always include common pre-tasks
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - app is defined
+          - app | length > 0
+          - env_code is defined
+          - env_code in ['BAT', 'FATF', 'FATW', 'PROD', 'RELS']
+        fail_msg: |
+          Required variables missing or invalid:
+          - app: {{ app | default('UNDEFINED') }}
+          - env_code: {{ env_code | default('UNDEFINED') }}
+          Valid env_code values: BAT, FATF, FATW, PROD, RELS
+        success_msg: "Variable validation passed for app '{{ app }}' in environment '{{ env_code }}'"
+      tags: always
+
+    - name: Include group_vars all.yml
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/group_vars/all.yml"
+      tags: always
+
+    - name: Include env level variables
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/group_vars/{{ app | lower }}.yml"
+        name: env_vars
+      tags: always
+
+    - name: Include app level variables
+      ansible.builtin.include_vars:
+        file: "environments/app_vars/{{ app | lower }}.yml"
+        name: app_vars
+      tags: always
+
+    - name: Include host level variables - Standalone
+      ansible.builtin.include_vars:
+        dir: "environments/{{ env_code }}/host_vars/"
+        files_matching: "^(all|{{ inventory_hostname_short }})[.]yml$"
+
+  # Main task execution
+  tasks:
+    - name: Deploy application
+      ansible.builtin.include_role:
+        name: start_service

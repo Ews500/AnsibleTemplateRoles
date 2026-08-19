@@ -1,0 +1,86 @@
+---
+# was_remove_linux_service.yml
+# Description: Remove Linux systemd services for WebSphere Application Server standalone instances
+# Usage: ansible-playbook -i environments/FATW/hosts was_remove_linux_service.yml -e "app=policyentity"
+
+- name: Remove WebSphere Application Server services
+  hosts: "{{ app | default('null') }}"
+  gather_subset:
+    - '!all'
+    - 'min'
+
+  # Always include common pre-tasks
+  pre_tasks:
+    - name: Include vault file
+      tags: always
+      no_log: true
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/vault.yml"
+
+    - name: Include group_vars all.yml
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/group_vars/all.yml"
+      tags: always
+
+    - name: Include env level variables
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/group_vars/{{ app | lower }}.yml"
+        name: env_vars
+      tags: always
+
+    - name: Include app_vars variables
+      ansible.builtin.include_vars:
+        file: "environments/app_vars/{{ app | lower }}.yml"
+        name: app_vars
+      tags: always
+      failed_when: false
+
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - app is defined
+          - app | length > 0
+          - env_code is defined
+          - env_code in ['BAT', 'FATF', 'FATW', 'PROD', 'RELS']
+        fail_msg: |
+          Required variables missing or invalid:
+          - app: {{ app | default('UNDEFINED') }}
+          - env_code: {{ env_code | default('UNDEFINED') }}
+          Valid env_code values: BAT, FATF, FATW, PROD, RELS
+        success_msg: "Basic variable validation passed for app '{{ app }}' in environment '{{ env_code }}'"
+      tags: always
+
+    - name: Validate standalone application (not Network Deployment)
+      ansible.builtin.assert:
+        that:
+          - "env_vars.dmgr_host is not defined"
+        fail_msg: |
+          This playbook only removes services for standalone application servers.
+          The presence of 'env_vars.dmgr_host' indicates this is a Network Deployment (ND) application.
+          ND applications should not have their services removed by this role.
+          Application: {{ app }}
+          Environment: {{ env_code }}
+        success_msg: "Confirmed '{{ app }}' is a standalone application (no dmgr_host found)"
+      tags: always
+
+    - name: Display target service information
+      ansible.builtin.debug:
+        msg:
+          - "Target service: was_{{ env_code | lower }}{{ app_vars.common_app_group | default(app | lower) }}.service"
+          - "Application: {{ app }}"
+          - "Common app group: {{ app_vars.common_app_group | default('N/A - using app name') }}"
+          - "Standalone application confirmed (no dmgr_host found)"
+
+  tasks:
+    - name: Include remove_linux_service role
+      ansible.builtin.include_role:
+        name: remove_linux_service
+      tags: remove_service
+
+  post_tasks:
+    - name: Service removal complete
+      ansible.builtin.debug:
+        msg:
+          - "Service removal process completed for {{ inventory_hostname }}"
+          - "Application: {{ app }}"
+          - "Environment: {{ env_code }}"

@@ -1,0 +1,13 @@
+---
+# was_install.yml
+# Description: Install IBM WebSphere Application Server using IBM Installation Manager
+# Author: Manbir Singh (@GBMSINGH)
+# Created: 2025-04-21
+# Last Modified: 2025-08-01
+- name: Install and patch WebSphere Application Server
+  hosts: "{{ target_group | default('null') }}"
+  become: true
+  become_user: webadmn
+  roles:
+    - installation_manager_install
+    - was_install

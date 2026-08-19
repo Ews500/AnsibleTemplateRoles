@@ -1,0 +1,20 @@
+---
+# web_server_install.yml
+# Description: Install IBM HTTP Server, Web Server Plug-ins and Customization Toolbox
+# Author: Manbir Singh (@GBMSINGH)
+# Created: 2025-04-21
+# Last Modified: 2025-08-01
+- name: Install IBM HTTP Web Server Plugin and WCT
+  hosts: "{{ target_group | default('null') }}"
+  become: true
+  become_user: webadmn
+
+  pre_tasks:
+    - name: Fail if target_group is not 'ihs'
+      ansible.builtin.fail:
+        msg: "This playbook is intended to be run only for target_group='ihs' (web servers). Current value: {{ target_group }}"
+      when: target_group != 'ihs'
+
+  roles:
+    - installation_manager_install  # shared across products
+    - http_server_install           # handles ihs logic internally

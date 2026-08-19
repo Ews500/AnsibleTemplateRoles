@@ -1,0 +1,34 @@
+# was_ssl_certs_install_nd.yml
+# Description: Install SSL Certificate for ND JVMs Keystore Database.
+# Author: Manbir Singh (@GBMSINGH)
+# Created: 2026-02-19
+# Last Modified: 2026-02-19
+- name: WebSphere Application Server SSL Certification Install on ND Cluster JVMs
+  hosts: "{{ target_group | default('null') }}"
+  become: true
+  become_user: webadmn
+
+  pre_tasks:
+    - name: Include vault file
+      tags: always
+      no_log: true # To avoid printing variables in output
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/vault.yml"
+
+    - name: Include group_vars all.yml
+      tags: always
+      ansible.builtin.include_vars: "environments/{{ env_code }}/group_vars/all.yml"
+
+    - name: Include host level variables - ND
+      tags: always
+      ansible.builtin.include_vars:
+        dir: "environments/{{ env_code }}/host_vars/"
+        files_matching: "^(all|{{ env_vars.dmgr_host }})[.]yml$"
+      when: env_vars.dmgr_host is defined
+
+  # Main task execution
+  tasks:
+    - name: Install SSL Certificate on Node for Clustered Apps JVMs
+      tags: always
+      ansible.builtin.include_role:
+        name: was_ssl_certs_install_nd

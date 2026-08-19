@@ -1,0 +1,82 @@
+---
+# was_deploy_application.yml
+# Description: Deploy an application in WebSphere Application Server
+# Author: Daniel Benitez Aguila (@ESDBEN2)
+# Created: 2024-04-01
+# Last Modified: 2025-08-01
+- name: Deploy Websphere Application
+  hosts: "{{ app | default('null') }}"
+  gather_facts: true
+  gather_subset:
+    - '!all'
+    - 'min'
+
+  # Always include common pre-tasks
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - app is defined
+          - app | length > 0
+          - env_code is defined
+          - env_code in ['BAT', 'FATF', 'FATW', 'PROD', 'RELS']
+        fail_msg: |
+          Required variables missing or invalid:
+          - app: {{ app | default('UNDEFINED') }}
+          - env_code: {{ env_code | default('UNDEFINED') }}
+          Valid env_code values: BAT, FATF, FATW, PROD, RELS
+        success_msg: "Variable validation passed for app '{{ app }}' in environment '{{ env_code }}'"
+      tags: always
+
+    - name: Load vault secrets
+      no_log: true # To avoid printing variables in output
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/vault.yml"
+      tags: always
+
+    - name: Include group_vars all.yml
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/group_vars/all.yml"
+      tags: always
+
+    - name: Include env level variables
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/group_vars/{{ app | lower }}.yml"
+        name: env_vars
+      tags: always
+
+    - name: Include app level variables
+      ansible.builtin.include_vars:
+        file: "environments/app_vars/{{ app | lower }}.yml"
+        name: app_vars
+      tags: always
+
+    - name: Include host level variables - Standalone
+      ansible.builtin.include_vars:
+        dir: "environments/{{ env_code }}/host_vars/"
+        files_matching: "^(all|{{ inventory_hostname_short }})[.]yml$"
+      when: env_vars.dmgr_host is not defined
+
+    - name: Include host level variables - ND
+      ansible.builtin.include_vars:
+        dir: "environments/{{ env_code }}/host_vars/"
+        files_matching: "^(all|{{ env_vars.dmgr_host }})[.]yml$"
+      when: env_vars.dmgr_host is defined
+
+  # Main task execution
+  tasks:
+    - name: Deploy application
+      ansible.builtin.include_role:
+        name: deploy_was_application
+
+    - name: Restart service - Standalone
+      tags: restart_service
+      when: env_vars.dmgr_host is not defined
+      block:
+        - name: Stop service
+          ansible.builtin.include_role:
+            name: stop_service
+
+        - name: Start service
+          ansible.builtin.include_role:
+            name: start_service

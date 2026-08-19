@@ -1,0 +1,10 @@
+# ansible-playbook was_create_linux_service.yml -i environments/FATW/
+
+- name: Create sysman scripts from ND hosts
+  hosts: nd
+  gather_subset:
+    - '!all'
+    - 'min'
+    - 'network'
+  roles:
+    - create_sysman

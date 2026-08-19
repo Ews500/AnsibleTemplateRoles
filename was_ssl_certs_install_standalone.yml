@@ -1,0 +1,66 @@
+---
+# was_ssl_certs_install.yml
+# Description: Install SSL Certificate for Standalone JVMs Keystore Database.
+# Author: Manbir Singh (@GBMSINGH)
+# Created: 2026-02-18
+# Last Modified: 2026-02-18
+- name: WebSphere Application Server SSL Certification Install on Standalone JVMs
+  hosts: "{{ app | default('null') }}"
+  gather_subset:
+    - '!all'
+    - 'min'
+  become: true
+  become_user: webadmn
+
+  # Always include common pre-tasks
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - app is defined
+          - app | length > 0
+          - env_code is defined
+          - env_code in ['BAT', 'FATF', 'FATW', 'PROD', 'RELS']
+        fail_msg: |
+          Required variables missing or invalid:
+          - app: {{ app | default('UNDEFINED') }}
+          - env_code: {{ env_code | default('UNDEFINED') }}
+          Valid env_code values: BAT, FATF, FATW, PROD, RELS
+        success_msg: "Variable validation passed for app '{{ app }}' in environment '{{ env_code }}'"
+      tags: always
+
+    - name: Load vault secrets
+      no_log: true # To avoid printing variables in output
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/vault.yml"
+      tags: always
+
+    - name: Include group_vars all.yml
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/group_vars/all.yml"
+      tags: always
+
+    - name: Include env level variables
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/group_vars/{{ app | lower }}.yml"
+        name: env_vars
+      tags: always
+
+    - name: Include app level variables
+      ansible.builtin.include_vars:
+        file: "environments/app_vars/{{ app | lower }}.yml"
+        name: app_vars
+      tags: always
+
+    - name: Include host level variables - Standalone
+      ansible.builtin.include_vars:
+        dir: "environments/{{ env_code }}/host_vars/"
+        files_matching: "^(all|{{ inventory_hostname_short }})[.]yml$"
+      tags: always
+
+  # Main task execution
+  tasks:
+    - name: Install SSL Certificate for Standalone Apps JVMs Keystore Database
+      tags: always
+      ansible.builtin.include_role:
+        name: was_ssl_certs_install_standalone

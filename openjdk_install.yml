@@ -1,0 +1,9 @@
+---
+# Playbook to install OpenJDK
+
+- name: Install OpenJDK
+  hosts: standalone
+  become: true
+  become_user: webadmn
+  roles:
+    - openjdk_install

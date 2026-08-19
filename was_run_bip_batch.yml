@@ -1,0 +1,49 @@
+---
+
+- name: Setup variables
+  hosts: localhost
+  tags: always
+  gather_subset:
+    - '!all'
+    - 'min'
+    - 'network'
+  tasks:
+    - name: Include role variables
+      ansible.builtin.include_vars:
+        dir: "roles/run_bip_batch_job/defaults"
+        files_matching: "^main.yml$"
+
+    - name: Find matching mbean
+      ansible.builtin.set_fact:
+        app: "{{ item.key }}"
+      with_dict: "{{ batch_vars }}"
+      when: mbean_name in item.value
+
+    - name: Fail if mbean is not found
+      ansible.builtin.fail:
+        msg: "{{ app }} DOES NOT exists"
+      when: app is not defined
+
+    - name: Print mbean_name and app variables
+      ansible.builtin.debug:
+        msg: "mbean_name - {{ mbean_name }} -->  app - {{ app }}"
+
+    - name: Include environment and app level variables
+      ansible.builtin.include_vars:
+        dir: "environments/{{ env_code }}/group_vars"
+        files_matching: "^(all|{{ app | lower }})[.]yml$"
+
+    - name: Print was_bip_batch_host variable
+      ansible.builtin.debug:
+        msg: "was_bip_batch_host - {{ was_bip_batch_host }}"
+
+    - name: Include target host variables
+      ansible.builtin.include_vars:
+        dir: "environments/{{ env_code }}/host_vars"
+        files_matching: "^({{ was_bip_batch_host }})[.]yml$"
+
+- name: Run BIP batch job
+  hosts: localhost
+  tags: run_bip_batch_job
+  roles:
+    - run_bip_batch_job

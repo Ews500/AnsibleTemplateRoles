@@ -1,0 +1,23 @@
+---
+# Playbook to import certificate into OpenJDK cacerts
+
+- name: Import certificate into OpenJDK cacerts
+  hosts: standalone
+  become: true
+  become_user: webadmn
+  pre_tasks:
+    - name: Include vault file
+      tags: always
+      no_log: true # To avoid printing variables in output
+      ansible.builtin.include_vars:
+        file: "roles/openjdk_cacerts_import/vars/vault.yml"
+
+    - name: Include group_vars all.yml
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/group_vars/all.yml"
+      tags: always
+
+  tasks:
+    - name: Include openjdk_cacerts_import role
+      ansible.builtin.include_role:
+        name: openjdk_cacerts_import

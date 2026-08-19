@@ -1,0 +1,35 @@
+---
+# was_monitoring.yml
+# Description: Configure monitoring for WAS environments in Centreon
+# Author: Daniel Pitt (@DJPITT92)
+# Created: 2024-10-15
+# Last Modified: 2025-08-05
+
+- name: WAS Monitoring
+  hosts: [standalone, nd]
+  become: true
+  become_user: root
+  force_handlers: true
+  tags: setup_linux
+  pre_tasks:
+    - name: Include vault file
+      tags: always
+      no_log: true # To avoid printing variables in output
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/vault.yml"
+
+    - name: Include host level variables - Standalone
+      ansible.builtin.include_vars:
+        dir: "environments/{{ env_code }}/host_vars/"
+        files_matching: "^(all|{{ inventory_hostname_short }})[.]yml$"
+      when: inventory_hostname in groups['standalone']
+
+    - name: Include host level variables - ND
+      ansible.builtin.include_vars:
+        dir: "environments/{{ env_code }}/host_vars/"
+        files_matching: "^(all|{{ env_vars.dmgr_host }})[.]yml$"
+      when: env_vars.dmgr_host is defined
+  tasks:
+    - name: WAS Monitoring role
+      ansible.builtin.include_role:
+        name: was_monitoring

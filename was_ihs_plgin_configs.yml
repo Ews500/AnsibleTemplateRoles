@@ -1,0 +1,39 @@
+---
+
+- name: Install Atradius SSL on WebSphere Application Server
+  hosts: "{{ app | default('null') }}"
+  gather_subset:
+    - '!all'
+    - 'min'
+  pre_tasks:
+    - name: Include vault file
+      tags: always
+      no_log: true # To avoid printing variables in output
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/vault.yml"
+
+    - name: Include group_vars all.yml
+      tags: always
+      ansible.builtin.include_vars: "environments/{{ env_code }}/group_vars/all.yml"
+
+    - name: Include env level variables
+      tags: always
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/group_vars/{{ app | lower }}.yml"
+        name: env_vars
+
+    - name: Debug env level variables
+      ansible.builtin.debug:
+        msg: "Extracted env level variables: {{ env_vars }}"
+
+    - name: Include host level variables - Standalone
+      ansible.builtin.include_vars:
+        dir: "environments/{{ env_code }}/host_vars/"
+        files_matching: "^(all|{{ inventory_hostname_short }})[.]yml$"
+      when: env_vars.dmgr_host is not defined
+
+  tasks:
+    - name: Configure Newly deployed application with Web Server
+      tags: always
+      ansible.builtin.include_role:
+        name: was_ihs_plgin_config

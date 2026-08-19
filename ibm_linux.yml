@@ -1,0 +1,15 @@
+---
+# ibm_linux.yml
+# Description: Prepare Linux systems for IBM software installation including user creation, package installation, and system configuration.
+# Author: Daniel Benitez Aguila (@ESDBEN2)
+# Created: 2024-06-21
+# Last Modified: 2025-08-01
+- name: Setting up linux host
+  hosts: all
+  become: true
+  become_user: root
+  gather_subset:
+    - '!all'
+    - 'min'
+  roles:
+    - ibm_linux

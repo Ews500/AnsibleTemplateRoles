@@ -1,0 +1,46 @@
+---
+
+- name: Deploy Websphere Application
+  hosts: "{{ app | default('null') }}"
+  gather_subset:
+    - '!all'
+    - 'min'
+  pre_tasks:
+    - name: Include vault file
+      tags: always
+      no_log: true # To avoid printing variables in output
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/vault.yml"
+
+    - name: Include group_vars all.yml
+      ansible.builtin.include_vars: "environments/{{ env_code }}/group_vars/all.yml"
+
+    - name: Include env level variables
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/group_vars/{{ app | lower }}.yml"
+        name: env_vars
+
+    - name: Include app level variables
+      ansible.builtin.include_vars:
+        file: "environments/app_vars/{{ app | lower }}.yml"
+        name: app_vars
+
+    - name: Include host level variables - Standalone
+      ansible.builtin.include_vars:
+        dir: "environments/{{ env_code }}/host_vars/"
+        files_matching: "^(all|{{ inventory_hostname_short }})[.]yml$"
+      when: env_vars.dmgr_host is not defined
+
+    - name: Include host level variables - ND
+      ansible.builtin.include_vars:
+        dir: "environments/{{ env_code }}/host_vars/"
+        files_matching: "^(all|{{ env_vars.dmgr_host }})[.]yml$"
+      when: env_vars.dmgr_host is defined
+  tasks:
+    - name: Copy custom properties template
+      ansible.builtin.debug:
+        msg: "{{ lookup('ansible.builtin.template', './roles/deploy_was_application/templates/custom_properties/genericbip-igw/' + item) }}"
+      with_items:
+        - "application_config.properties.j2"
+        - "application.xml.j2"
+        - "logger.xml.j2"

@@ -1,0 +1,64 @@
+- name: Remove Standalone WebSphere Application Server Profile
+  hosts: "{{ app | default('null') }}"
+  gather_subset:
+    - '!all'
+    - 'min'
+    - 'network'
+  become: true
+  become_user: webadmn
+
+  pre_tasks:
+    - name: Include vault file
+      tags: always
+      no_log: true # To avoid printing variables in output
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/vault.yml"
+
+    - name: Include group_vars all.yml
+      tags: always
+      ansible.builtin.include_vars: "environments/{{ env_code }}/group_vars/all.yml"
+
+    - name: Include env level variables
+      tags: always
+      ansible.builtin.include_vars:
+        file: "environments/{{ env_code }}/group_vars/{{ app | lower }}.yml"
+        name: env_vars
+
+    - name: Include app level variables
+      tags: always
+      ansible.builtin.include_vars:
+        file: "environments/app_vars/{{ app | lower }}.yml"
+        name: app_vars
+
+    - name: Include host level variables - Standalone
+      tags: always
+      ansible.builtin.include_vars:
+        dir: "environments/{{ env_code }}/host_vars/"
+        files_matching: "^(all|{{ inventory_hostname_short }})[.]yml$"
+      when: env_vars.dmgr_host is not defined
+
+    # No need to load dmgr host_vars for standalone
+
+  tasks:
+    - name: Stop Server
+      tags: stop_server
+      ansible.builtin.include_role:
+        name: stop_service
+
+    - name: Remove Standalone Profile
+      tags: always
+      ansible.builtin.include_role:
+        name: was_remove_standalone_profile
+      register: profile_removal_result
+      ignore_errors: true
+
+    - name: Check profile removal status
+      ansible.builtin.debug:
+        msg:
+          - "Profile removal result:{{ 'failed' if (profile_removal_result.failed | default(false)) else 'success' }}"
+
+    - name: Remove Linux Service
+      tags: remove_service
+      ansible.builtin.include_role:
+        name: remove_linux_service
+      when: not (profile_removal_result.failed | default(false))
